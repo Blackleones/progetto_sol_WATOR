@@ -42,3 +42,24 @@ task pop(myQueue myq)
 
 	return t;
 }
+
+void freeQueue(myQueue myq)
+{
+	queue q = NULL;
+	queue p = NULL;
+
+	if(myq != NULL)
+	{
+		q = myq->myqueue;
+
+		while(q != NULL)
+		{
+			p = q;
+			q = q->next;
+
+			free(p->mytask);
+			free(p);
+		}
+	}
+
+}

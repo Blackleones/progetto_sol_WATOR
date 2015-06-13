@@ -33,5 +33,6 @@ struct __myQueue
 int isEmpty(myQueue);
 task pop(myQueue);
 int push(myQueue, task);
+void freeQueue(myQueue);
 
 #endif
