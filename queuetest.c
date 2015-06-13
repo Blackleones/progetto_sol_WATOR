@@ -4,11 +4,24 @@
 #include <mcheck.h>
 #include <unistd.h>
 
+void stampaT(task t)
+{
+	printf("%d %d %d %d\n", t->startX, t->startY, t->stopX, t->stopY);
+}
+
 int main()
 {
 	myQueue myq = (myQueue) malloc(sizeof(_myQueue));
 	task t = (task) malloc(sizeof(_task));
 	task t2 = (task) malloc(sizeof(_task));
+
+	system("clear");
+
+	populateTask(t, 1, 1, 2, 2);
+	populateTask(t2, 1, 2, 3, 4);
+
+	stampaT(t);
+	stampaT(t2);
 
 	if(isEmpty(myq) != 0)
 	{

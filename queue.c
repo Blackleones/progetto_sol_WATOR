@@ -43,6 +43,14 @@ task pop(myQueue myq)
 	return t;
 }
 
+void populateTask(task t, int sX, int sY, int fX, int fY)
+{
+	t->startX = sX;
+	t->startY = sY;
+	t->stopX = fX;
+	t->stopY = fY;
+}
+
 void freeQueue(myQueue myq)
 {
 	queue q = NULL;
