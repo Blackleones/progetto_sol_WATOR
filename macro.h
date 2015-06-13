@@ -6,6 +6,7 @@
 */
 #ifndef _MACRO_
 #define _MACRO_
+#include <stdio.h>
 
 /* 
 		***********************************************************************
@@ -16,16 +17,6 @@
 
 #define ec_meno1(s) \
         if ( (s) == -1 ) { perror("ERRORE"); exit(errno); }
-
-/* 
-		*******************************************************************
-		***	________________________WATOR_____________________________	***
-		***															  	***
- 		*******************************************************************
-*/
-
-#define RIGA_FILE_SIZE 128
-#define NWORK_DEF 2
-#define CHRON_DEF 2
         
+#define error(errnoval, message) {errno = errnoval; perror(message);}
 #endif
