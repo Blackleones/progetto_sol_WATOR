@@ -2,15 +2,30 @@
 
 int isEmpty(myQueue myq)
 {
+	if(DEBUGQUEUE)
+		printf("entrato in queue - isEmpty\n");
+
 	if(myq != NULL)
 		return (myq->size == 0) ? 0 : 1;
 	else
 		return -1;
 }
 
+void initMyQueue(myQueue myq)
+{
+	if(DEBUGQUEUE)
+		printf("entrato in queue - initMyQueue\n");
+
+	myq->myqueue = NULL;
+	myq->size = 0;
+}
+
 int push(myQueue myq, task t)
 {
 	queue q = (queue) malloc(sizeof(_queue));
+
+	if(DEBUGQUEUE)
+		printf("entrato in queue - push\n");
 
 	if(q == NULL)
 	{
@@ -31,6 +46,9 @@ task pop(myQueue myq)
 	queue q = myq->myqueue;
 	task t = NULL;
 
+	if(DEBUGQUEUE)
+		printf("entrato in queue - pop\n");
+
 	if(q == NULL)
 		return NULL;
 
@@ -45,6 +63,9 @@ task pop(myQueue myq)
 
 void populateTask(task t, int sX, int sY, int fX, int fY)
 {
+	if(DEBUGQUEUE)
+		printf("entrato in queue - populateTask\n");
+
 	t->startX = sX;
 	t->startY = sY;
 	t->stopX = fX;
@@ -55,6 +76,9 @@ void freeQueue(myQueue myq)
 {
 	queue q = NULL;
 	queue p = NULL;
+
+	if(DEBUGQUEUE)
+		printf("entrato in queue - freeQueue\n");
 
 	if(myq != NULL)
 	{

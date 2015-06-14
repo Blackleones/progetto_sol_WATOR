@@ -35,6 +35,13 @@ struct __myQueue
 };
 
 /*
+	\param myQueue, la coda da inizializzare
+
+	la funzione mette a 0 il puntatore alla testa e setta size = 0
+*/
+void initMyQueue(myQueue);
+
+/*
 	\param myQueue, la coda da esaminare
 
 	\retval 1 se la coda contiene almeno un elemento

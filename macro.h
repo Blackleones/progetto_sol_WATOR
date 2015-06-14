@@ -14,6 +14,12 @@
 		***																  	***
  		***********************************************************************
 */
+/*se compilo con -DDEBUG setto DEBUG = 1 e avvio tutte le stampe di debug*/
+#ifndef DEBUGTHREAD
+#endif
+
+#ifndef DEBUGQUEUE
+#endif
 
 #define ec_meno1(s) \
         if ( (s) == -1 ) { perror("ERRORE"); exit(errno); }
