@@ -2,9 +2,6 @@
 
 int isEmpty(myQueue myq)
 {
-	if(DEBUGQUEUE)
-		printf("entrato in queue - isEmpty\n");
-
 	if(myq != NULL)
 		return (myq->size == 0) ? 0 : 1;
 	else
@@ -13,9 +10,6 @@ int isEmpty(myQueue myq)
 
 void initMyQueue(myQueue myq)
 {
-	if(DEBUGQUEUE)
-		printf("entrato in queue - initMyQueue\n");
-
 	myq->myqueue = NULL;
 	myq->size = 0;
 }
@@ -63,9 +57,6 @@ task pop(myQueue myq)
 
 void populateTask(task t, int sX, int sY, int fX, int fY)
 {
-	if(DEBUGQUEUE)
-		printf("entrato in queue - populateTask\n");
-
 	t->startX = sX;
 	t->startY = sY;
 	t->stopX = fX;
@@ -76,9 +67,6 @@ void freeQueue(myQueue myq)
 {
 	queue q = NULL;
 	queue p = NULL;
-
-	if(DEBUGQUEUE)
-		printf("entrato in queue - freeQueue\n");
 
 	if(myq != NULL)
 	{

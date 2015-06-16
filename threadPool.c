@@ -24,7 +24,44 @@ int initpool(threadPool tp)
 	tp->collectorFlag = 0;
 	tp->workingThread = 0;
 
-	/*inizializzo dispatcher*/
+	/*
+		inizializzo mutex e cw
+	*/
+	checkError = pthread_mutex_init(&(tp->queueLock), NULL);
+
+	if(checkError != 0)
+	{
+		error(checkError, "errore initpool - inizializzazione lock");
+		return -1;
+	}
+
+	checkError = pthread_cond_init(&(tp->waitingDispatcher), NULL);
+
+	if(checkError != 0)
+	{
+		error(checkError, "errore initpool - inizializzazione cw waitingDispatcher");
+		return -1;
+	}
+
+	checkError = pthread_cond_init(&(tp->waitingWorkers), NULL);
+
+	if(checkError != 0)
+	{
+		error(checkError, "errore initpool - inizializzazione cw waitingWorkers");
+		return -1;
+	}
+
+	checkError = pthread_cond_init(&(tp->waitingCollector), NULL);
+
+	if(checkError != 0)
+	{
+		error(checkError, "errore initpool - inizializzazione cw waitingCollector");
+		return -1;
+	}
+
+	/*
+		inizializzo dispatcher
+	*/
 	checkError = pthread_create(&(tp->dispatcher), NULL, dispatcherTask, (void*) &tp);
 
 	if(checkError != 0)
@@ -61,38 +98,6 @@ int initpool(threadPool tp)
 			return -1;
 		}
 
-	}
-
-	checkError = pthread_mutex_init(&(tp->queueLock), NULL);
-
-	if(checkError != 0)
-	{
-		error(checkError, "errore initpool - inizializzazione lock");
-		return -1;
-	}
-
-	checkError = pthread_cond_init(&(tp->waitingDispatcher), NULL);
-
-	if(checkError != 0)
-	{
-		error(checkError, "errore initpool - inizializzazione cw waitingDispatcher");
-		return -1;
-	}
-
-	checkError = pthread_cond_init(&(tp->waitingWorkers), NULL);
-
-	if(checkError != 0)
-	{
-		error(checkError, "errore initpool - inizializzazione cw waitingWorkers");
-		return -1;
-	}
-
-	checkError = pthread_cond_init(&(tp->waitingCollector), NULL);
-
-	if(checkError != 0)
-	{
-		error(checkError, "errore initpool - inizializzazione cw waitingCollector");
-		return -1;
 	}
 
 	return 1;
@@ -151,9 +156,17 @@ void* dispatcherTask(void* _tp)
 
 		task t1 = (task) malloc(sizeof(_task));
 		task t2 = (task) malloc(sizeof(_task));
+		task t3 = (task) malloc(sizeof(_task));
+		task t4 = (task) malloc(sizeof(_task));
+		task t5 = (task) malloc(sizeof(_task));
+		task t6 = (task) malloc(sizeof(_task));
 
 		push(taskqueue, t1);
 		push(taskqueue, t2);
+		push(taskqueue, t3);
+		push(taskqueue, t4);
+		push(taskqueue, t5);
+		push(taskqueue, t6);
 		
 		tp->workFlag = 1;
 		pthread_cond_broadcast(&(tp->waitingDispatcher));
@@ -220,7 +233,12 @@ void* collectorTask(void* _tp)
 		if(DEBUGTHREAD)
 			printf("SIZE = %d\n", taskqueue->size);
 		
-		while(tp->collectorFlag == 0 || tp->workingThread != 0 || isEmpty(taskqueue))
+		/*
+			isEmpty è commentato perche collectorFlag viene settato a 1 quando 
+			taskqueue->size = 0 => isEmpty ritorna sicuramente 1 perche viene chiamata sotto
+			lock
+		*/
+		while(tp->collectorFlag == 0 || tp->workingThread != 0/* || isEmpty(taskqueue)*/)
 			pthread_cond_wait(&(tp->waitingWorkers), &(tp->queueLock));
 
 		tp->collectorFlag = 0;
