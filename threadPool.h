@@ -11,34 +11,54 @@
 typedef struct __threadPool _threadPool;
 typedef _threadPool* threadPool;
 
-/*
-	taskqueue: coda dei task da elaborare
-	dispatcher, collector, workers: sono i thread 
-
-	workingThread: variabile che conta il numero di 
-		worker attivi in una elaborazione dei task.
-		questo flag mi occorre per far partire il collector
-
-	work: flag che avvia / ferma i worker.
-		se work = 1 allora gli worker devono elaborare
-		se work = 0 allora gli worker devono attendere
-*/
 struct __threadPool
 {
+	/*
+		coda dei task da elaborare
+	*/
 	myQueue taskqueue;
 	
+	/*
+		i thread
+	*/
 	pthread_t dispatcher;
 	pthread_t collector;
 	pthread_t* workers;
 
+	/*
+		lock da utilizzare sulla taskqueue
+	*/
 	pthread_mutex_t queueLock;
-
+	/*
+		viene usata dai worker per aspettare che il dispatcher abbia riempito
+		la taskqueue
+	*/
 	pthread_cond_t waitingDispatcher;
+	/*
+		viene usata dal dispatcher per aspettare che sia terminato 1 ciclo di
+		elaborazione del chronon
+	*/
 	pthread_cond_t waitingCollector;
+	/*
+		viene usata dal collector per aspettare che i worker abbiano "finito",
+		quando un worker vede la lista vuota avvisa il collector
+	*/
 	pthread_cond_t waitingWorkers;
-
+	/*
+		# worker che stanno effettuando una elaborazione
+	*/
 	volatile int workingThread;
-	volatile int work;
+	/*
+		flag per avviare il collector
+	*/
+	volatile int collectorFlag;
+	/*
+		flag per avviare i worker
+	*/
+	volatile int workFlag;
+	/*
+		flag per avviare tutti i thread
+	*/
 	volatile int run;
 };
 
@@ -52,21 +72,34 @@ struct __threadPool
 */
 int initpool(threadPool);
 
+/*
+	\param threadPool, la struttura dati principale da liberare
+
+	libera gli elementi allocati della struttura dati
+*/
 void freePool(threadPool);
 
+/*
+	il thread worker verifica se è stato settato workFlag ed inizia la sua
+	elaborazione:
+		se la taskqueue è vuota si mette in attesa
+		se la taskqueue contiene un elemento, lo estrae, lo elabora e se
+		adesso la taskqueue è vuota setta collectorFlag e gli invia un segnale
+*/
 void* workerTask(void*);
 
 /*
 	il thread dispatcher verifica che la coda sia vuota,
 		se lo è inizia a preparare i task, l'inserisce nella coda,
-		setta work = 1, sveglia i worker (broadcast) e si mette
+		setta workFlag = 1, sveglia i worker (broadcast) e si mette
 		in attesa del collector
 */
 void* dispatcherTask(void*);
 
 /*
-	il thread collector verifica che la coda sia vuota e che workingThread == 0
-		in tal caso setta work = 0, stampa il pianeta, aggiorna il chronon, sveglia il dispatcher
+	il thread collector verifica che la coda sia vuota, che workingThread == 0 
+	e che collectorTask sia == 1 
+		in tal caso setta work = 0, collectorFlag = 0 stampa il pianeta, aggiorna il chronon, sveglia il dispatcher
 		e si rimette in attesa dei worker
 */
 void* collectorTask(void*);

@@ -20,7 +20,8 @@ int initpool(threadPool tp)
 	initMyQueue(tp->taskqueue);
 
 	tp->run = 1;
-	tp->work = 0;
+	tp->workFlag = 0;
+	tp->collectorFlag = 0;
 	tp->workingThread = 0;
 
 	/*inizializzo dispatcher*/
@@ -134,12 +135,29 @@ void* dispatcherTask(void* _tp)
 	threadPool tp = *((threadPool*) _tp);
 	myQueue taskqueue = tp->taskqueue;
 
-	if(DEBUGTHREAD)
-		printf("entrato in threadPool - dispatcherTask\n");	
-
-	while(0)
+	while(tp->run)
 	{
 
+		if(DEBUGTHREAD)
+			printf("---------DISPATCHER---------\n");
+
+		/*
+			acquisisco la lock ed inserisco i task da elaborare
+		*/
+		pthread_mutex_lock(&(tp->queueLock));
+		
+		while(tp->workFlag != 0 || isEmpty(tp->taskqueue))
+			pthread_cond_wait(&(tp->waitingCollector), &(tp->queueLock));
+
+		task t1 = (task) malloc(sizeof(_task));
+		task t2 = (task) malloc(sizeof(_task));
+
+		push(taskqueue, t1);
+		push(taskqueue, t2);
+		
+		tp->workFlag = 1;
+		pthread_cond_broadcast(&(tp->waitingDispatcher));
+		pthread_mutex_unlock(&(tp->queueLock));
 	}
 
 	pthread_exit(EXIT_SUCCESS);
@@ -150,12 +168,37 @@ void* workerTask(void* _tp)
 	threadPool tp = *((threadPool*) _tp);
 	myQueue taskqueue = tp->taskqueue;
 
-	if(DEBUGTHREAD)
-		printf("entrato in threadPool - workerTask\n");
-
-	while(0)
+	while(tp->run)
 	{
 
+		if(DEBUGTHREAD)
+			printf("---------WORKER---------\n");
+
+		/*
+			acquisisco la lock
+				-se la coda è vuota estraggo un task
+			rilascio la lock
+				-elaboro il task
+
+			<da fare>
+			acquisisco la lock sulla matrice
+				-controllo i vicini
+			rilascio la lock
+				-elaboro
+		*/
+		pthread_mutex_lock(&(tp->queueLock));
+
+		while(tp->workFlag == 0 || !isEmpty(tp->taskqueue))
+			pthread_cond_wait(&(tp->waitingDispatcher), &(tp->queueLock));
+
+		pop(taskqueue);
+
+		if(isEmpty(taskqueue) == 0){
+			tp->collectorFlag = 1;
+			pthread_cond_signal(&(tp->waitingWorkers));
+		}
+
+		pthread_mutex_unlock(&(tp->queueLock));
 	}
 
 	pthread_exit(EXIT_SUCCESS);
@@ -166,12 +209,24 @@ void* collectorTask(void* _tp)
 	threadPool tp = *((threadPool*) _tp);
 	myQueue taskqueue = tp->taskqueue;
 
-	if(DEBUGTHREAD)
-		printf("entrato in threadPool - collectorTask\n");
-
-	while(0)
+	while(tp->run)
 	{
 
+		if(DEBUGTHREAD)
+			printf("---------COLLECTOR---------\n");
+
+		pthread_mutex_lock(&(tp->queueLock));
+
+		if(DEBUGTHREAD)
+			printf("SIZE = %d\n", taskqueue->size);
+		
+		while(tp->collectorFlag == 0 || tp->workingThread != 0 || isEmpty(taskqueue))
+			pthread_cond_wait(&(tp->waitingWorkers), &(tp->queueLock));
+
+		tp->collectorFlag = 0;
+		tp->workFlag = 0;
+		pthread_cond_signal(&(tp->waitingCollector));
+		pthread_mutex_unlock(&(tp->queueLock));
 	}
 
 	pthread_exit(EXIT_SUCCESS);
