@@ -1,0 +1,135 @@
+#!/bin/bash
+#
+# \file watorscript
+# \author Leonardo Lurci
+#  Si dichiara che il contenuto di questo file e' in ogni sua parte opera
+# 
+
+#colore testo
+red='\033[0;31m'
+green='\033[0;32m'
+NC='\033[0m'
+
+function printError {
+	printf "${red}NO${NC}\n" 1>&2
+	exit 1
+}
+
+function printHelp {
+	printf "WATORSCRIPT\nUso: [OPZIONI]...\n" 1>&2
+	printf "Opzioni:\n" 1>&2
+	printf "%-10s -s, ritorna il numero squali presenti nel file\n" 1>&2
+	printf "%-10s -f, ritorna il numero di pesci presenti nel file\n" 1>&2
+	printf "%-10s nomeFile, controlla la formattazione\n" 1>&2
+	exit 1
+}
+
+#checkParam verifica e setta i flag dei parametri ricevuti
+#controlliamo che tutti i parametri "-lettera" "--lettera" abbiano lettera=sfh
+#in modo tale da dare errore nel caso avessimo opzioni tipo -a -x --print etc.
+#successivamente, tramite getopt andiamo a scorrere i parametri e settiamo i relativi
+#flag (shark/fish) richiesti dall'utente. Se alla fine del parser non abbiamo alcun
+#opzione non parsata (quindi nessuna opzione -lettera --lettera) stampiamo help
+#se abbiamo letto piu' 1 opzione stampiamo help (possiamo lettere: -s -f o direttamente un nome)
+#nota:	$* = " $1 $2 $3 .. $n"
+#		$@ = "$1" "$2" "$3" .. "$n"
+function checkParam() {
+	if [[ $* =~ -[^sfh] ]] ; then
+		printHelp
+	fi
+
+	option=$(getopt -q -o sf -l "help" -- "$@");
+	eval set -- "$option";
+
+	args=0
+
+	while true; do
+		case "$1" in
+			-s)
+				shift
+				sharkFlag="-s"
+				;;
+			-f)
+				shift
+				fishFlag="-f"
+				;;
+			--help)
+				printHelp
+				;;
+			--)
+				shift
+				break
+		esac
+
+		((args++))
+	done
+
+	if [[ ( $# -ne 1 ) || ( $args -gt 1 ) ]] ; then
+		printHelp
+	fi
+
+	if [ -f $1 ] ; then
+		file=$1
+	else
+		printHelp
+	fi
+}
+
+#checkFile verifica che il file sia ben formattato
+#vengono controllati nrow, ncol
+#ogni volta che si legge una riga relativa alla matrice, viene eseguito
+#un confronto con il regex ^([WFS][[:space:]]){$(($ncol-1))}[WFS]$.
+#questa regex impone che la stringa deve contenere ncol-1 volte un carattere WFS
+#seguito da uno spazio e la stringa deve terminare con un carattere WFS.
+#alla fine controlliamo di aver letto esattamente nrow righe
+function checkFile() {
+	exec 3<$file
+	lineCounter=0
+
+	read -u 3 nrow
+	read -u 3 ncol
+
+	if ! [[ $nrow =~ ^[1-9][0-9]*$ || $ncol =~ ^[1-9][0-9]*$ ]] ; then
+		printError
+	fi
+
+	while read -u 3 line
+	do
+		if ! [[ $line =~ ^([WFS][[:space:]]){$(($ncol-1))}[WFS]$ ]] ; then
+			printError
+		fi
+
+		((lineCounter++))
+	done <&3
+
+	if [ $lineCounter != $(( $nrow)) ] ; then
+		printError
+	fi
+
+	printf "${green}OK${NC}\n" 1>&2
+}
+
+#countFishShark stampa il numero di pesci/squali che sono all'interno del file passato 
+function countFishShark() {
+	sharkCounter=$(grep -o $1 $file | wc -l);
+	printf "$sharkCounter\n"
+}
+
+#variabili
+fishFlag=""
+sharkFlag=""
+file=""
+nrow=0
+ncol=0
+checkParam $@
+checkFile 
+
+if [ "$sharkFlag" = '-s' ] ; then
+	countFishShark 'S'
+fi
+
+if [ "$fishFlag" = '-f' ] ; then
+	countFishShark 'F'
+fi
+
+exit 0
