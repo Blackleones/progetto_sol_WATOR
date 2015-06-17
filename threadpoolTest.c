@@ -5,7 +5,9 @@ gcc -g -Wall -pedantic -pthread -DDEBUGQUEUE -DDEBUGTHREAD -o t threadpoolTest.c
 int main()
 {
 	threadPool tp = (threadPool) malloc(sizeof(_threadPool));
-	initpool(tp);
+	wator_t* wator = new_wator("planet.dat");
+
+	initpool(tp,wator);
 	makeJoin(tp);
 	freePool(tp);
 

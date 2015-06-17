@@ -7,6 +7,9 @@
 #include "macro.h"
 #include "queue.h"
 #include "wator.h"
+#define K 3
+#define N 3
+typedef enum _status {ELABORATO, IN_ELABORAZIONE,  DA_ELABORARE} status;
 
 typedef struct __threadPool _threadPool;
 typedef _threadPool* threadPool;
@@ -17,7 +20,14 @@ struct __threadPool
 		coda dei task da elaborare
 	*/
 	myQueue taskqueue;
-	
+	/*
+		matrice KN di supporto per elaborare il pianeta 
+	*/
+	status** KNmatrix;
+	/*
+		struttura dati del pianeta
+	*/
+	wator_t* wator;
 	/*
 		i thread
 	*/
@@ -70,8 +80,17 @@ struct __threadPool
 	\retval 1 se l'inizializzazione della struttura dati è andata a buon fine
 	\retval -1 se c'e' stato un errore, setta errno
 */
-int initpool(threadPool);
+int initpool(threadPool, wator_t*);
 
+/*
+	\param threadPool, la struttura dati principale che stiamo inizializzando
+
+	inizializza la matrice KNmatrix di supporto
+	
+	\retval status** la KNmatrix
+	\retval NULL se c'e' stato un errore, setta errno
+*/
+status** initKNmatrix(threadPool);
 /*
 	\param threadPool, la struttura dati principale da liberare
 

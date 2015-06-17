@@ -1,6 +1,51 @@
 #include "threadPool.h"
 
-int initpool(threadPool tp)
+status** initNKmatrix(planet_t* plan)
+{
+	int i = 0, j = 0;
+	int KNnrow = 0;
+	int KNncol = 0;
+	int planet_nrow = 0;
+	int planet_ncol = 0;
+	
+	status** matrix = NULL;
+	
+	planet_nrow = plan->nrow;
+	planet_ncol = plan->ncol;
+
+	KNnrow = planet_nrow / K + ((planet_nrow % K != 0) ? 1 : 0);
+	KNncol = planet_ncol / N + ((planet_ncol % N != 0) ? 1 : 0);
+
+	if(DEBUGTHREAD)
+		printf("KNmatrix: %d * %d\n", KNnrow, KNncol);
+
+	matrix = (status**) malloc(KNnrow*sizeof(status*));
+
+	if(matrix == NULL)
+	{
+		error(EAGAIN, "errore initNKmatrix - creazione KNmatrix");
+		return NULL;
+	}
+
+	for(i = 0; i < KNnrow; i++)
+	{
+		matrix[i] = (status*) malloc(KNncol*sizeof(status));
+
+		if(matrix[i] == NULL)
+		{
+			error(EAGAIN, "errore initNKmatrix - crezione di una riga");
+			return NULL;
+		}
+
+		/*inizializzo la struttura a DA_ELABORARE*/
+		for(j = 0; j < KNncol; j++)
+			matrix[i][j] = DA_ELABORARE;
+	}
+
+	return matrix;
+}
+
+int initpool(threadPool tp, wator_t* w)
 {
 	int i = 0;
 	int checkError = 0;
@@ -8,13 +53,22 @@ int initpool(threadPool tp)
 	if(DEBUGTHREAD)
 		printf("entrato in threadPool - initPool\n");
 
+	tp->wator = w;
+
 	/*inizializzo la coda*/
 	tp->taskqueue = (myQueue) malloc(sizeof(_myQueue));
+	tp->KNmatrix = initNKmatrix(tp->wator->plan);
 
 	if(tp->taskqueue == NULL)
 	{
 		error(EAGAIN, "errore initpool - malloc taskqueue");
 		return -1;
+	}
+
+	if(tp->KNmatrix == NULL)
+	{
+		error(EAGAIN, "errore initpool - malloc KNmatrix");
+		return -1;		
 	}
 
 	initMyQueue(tp->taskqueue);

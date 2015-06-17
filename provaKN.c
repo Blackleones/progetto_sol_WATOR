@@ -2,7 +2,7 @@
 #include <stdlib.h>
 /*
 	per compilare:
-	gcc g -o NK provaNK.c
+	gcc g -o NK provaKN.c
 
 	per eseguire:
 	./MK
