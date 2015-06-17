@@ -15,9 +15,8 @@
  		***********************************************************************
 */
 /*se compilo con -DDEBUG setto DEBUG = 1 e avvio tutte le stampe di debug*/
-#ifndef DEBUGTHREAD
-#define DEBUGTHREAD 0
-#endif
+
+
 
 #ifndef DEBUGQUEUE
 #define DEBUGQUEUE 0

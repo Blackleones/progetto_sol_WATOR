@@ -1,6 +1,49 @@
 #include "threadPool.h"
 
-status** initNKmatrix(planet_t* plan)
+void printTask(task t)
+{
+	printf("\n=============================================\n");
+	printf("=\t[%d][%d]:\n=\t\tV: %d -> %d\n=\t\tO: %d -> %d\n=", t->i, t->j, t->startY, t->stopY, t->startX, t->stopX);
+	printf("\n=============================================\n");
+}
+
+void populateQueue(threadPool tp)
+{
+	int i = 0, j = 0;
+	int cri = 0, crf = 0;
+	int cci = 0, ccf = 0;
+
+	int KNrow =	tp->KNM->nrow;
+	int KNcol = tp->KNM->ncol;
+	int nrow = tp->wator->plan->nrow;
+	int ncol = tp->wator->plan->ncol;
+
+
+	while(i < KNrow)
+	{
+		crf = ((cri + K - 1 < nrow) ? cri + K - 1 : nrow -1);
+		cci = 0;
+		ccf = 0;
+		while(j < KNcol)
+		{
+			ccf = ((ccf + N - 1 < ncol) ? ccf + N - 1 : ncol-1);
+			
+			task t = (task) malloc(sizeof(_task));
+			populateTask(t, i, j, cri, cci, crf, ccf);
+			push(tp->taskqueue, t);
+
+			cci = ((ccf + 1 < ncol) ? ccf + 1 : ncol - 1);
+			ccf++;
+			j++;
+		}
+
+		cri = ((crf + 1 < nrow) ? crf + 1 : nrow - 1);
+		j = 0;
+		i++;
+	}
+}
+
+KNmatrix initNKmatrix(planet_t* plan)
 {
 	int i = 0, j = 0;
 	int KNnrow = 0;
@@ -8,6 +51,8 @@ status** initNKmatrix(planet_t* plan)
 	int planet_nrow = 0;
 	int planet_ncol = 0;
 	
+	KNmatrix knm = (KNmatrix) malloc(sizeof(_KNmatrix));
+
 	status** matrix = NULL;
 	
 	planet_nrow = plan->nrow;
@@ -16,7 +61,7 @@ status** initNKmatrix(planet_t* plan)
 	KNnrow = planet_nrow / K + ((planet_nrow % K != 0) ? 1 : 0);
 	KNncol = planet_ncol / N + ((planet_ncol % N != 0) ? 1 : 0);
 
-	if(DEBUGTHREAD)
+	if(DEBUG_THREAD)
 		printf("KNmatrix: %d * %d\n", KNnrow, KNncol);
 
 	matrix = (status**) malloc(KNnrow*sizeof(status*));
@@ -42,7 +87,11 @@ status** initNKmatrix(planet_t* plan)
 			matrix[i][j] = DA_ELABORARE;
 	}
 
-	return matrix;
+	knm->nrow = KNnrow;
+	knm->ncol = KNncol;
+	knm->matrix = matrix;
+
+	return knm;
 }
 
 int initpool(threadPool tp, wator_t* w)
@@ -50,14 +99,14 @@ int initpool(threadPool tp, wator_t* w)
 	int i = 0;
 	int checkError = 0;
 
-	if(DEBUGTHREAD)
+	if(DEBUG_THREAD)
 		printf("entrato in threadPool - initPool\n");
 
 	tp->wator = w;
 
 	/*inizializzo la coda*/
 	tp->taskqueue = (myQueue) malloc(sizeof(_myQueue));
-	tp->KNmatrix = initNKmatrix(tp->wator->plan);
+	tp->KNM = initNKmatrix(tp->wator->plan);
 
 	if(tp->taskqueue == NULL)
 	{
@@ -65,7 +114,7 @@ int initpool(threadPool tp, wator_t* w)
 		return -1;
 	}
 
-	if(tp->KNmatrix == NULL)
+	if(tp->KNM == NULL)
 	{
 		error(EAGAIN, "errore initpool - malloc KNmatrix");
 		return -1;		
@@ -183,7 +232,7 @@ int makeJoin(threadPool tp)
 
 void freePool(threadPool tp)
 {
-	if(DEBUGTHREAD)
+	if(DEBUG_THREAD)
 		printf("entrato in threadPool - freePool\n");
 
 	freeQueue(tp->taskqueue);
@@ -197,7 +246,7 @@ void* dispatcherTask(void* _tp)
 	while(tp->run)
 	{
 
-		if(DEBUGTHREAD)
+		if(DEBUG_THREAD)
 			printf("---------DISPATCHER---------\n");
 
 		/*
@@ -208,6 +257,8 @@ void* dispatcherTask(void* _tp)
 		while(tp->workFlag != 0 || isEmpty(tp->taskqueue))
 			pthread_cond_wait(&(tp->waitingCollector), &(tp->queueLock));
 
+		populateQueue(tp);
+		/*
 		task t1 = (task) malloc(sizeof(_task));
 		task t2 = (task) malloc(sizeof(_task));
 		task t3 = (task) malloc(sizeof(_task));
@@ -221,7 +272,7 @@ void* dispatcherTask(void* _tp)
 		push(taskqueue, t4);
 		push(taskqueue, t5);
 		push(taskqueue, t6);
-		
+		*/
 		tp->workFlag = 1;
 		pthread_cond_broadcast(&(tp->waitingDispatcher));
 		pthread_mutex_unlock(&(tp->queueLock));
@@ -238,7 +289,7 @@ void* workerTask(void* _tp)
 	while(tp->run)
 	{
 
-		if(DEBUGTHREAD)
+		if(DEBUG_THREAD)
 			printf("---------WORKER---------\n");
 
 		/*
@@ -258,7 +309,10 @@ void* workerTask(void* _tp)
 		while(tp->workFlag == 0 || !isEmpty(tp->taskqueue))
 			pthread_cond_wait(&(tp->waitingDispatcher), &(tp->queueLock));
 
-		pop(taskqueue);
+		task t = pop(taskqueue);
+
+		if(DEBUG_THREAD_TASK)
+			printTask(t);
 
 		if(isEmpty(taskqueue) == 0){
 			tp->collectorFlag = 1;
@@ -279,12 +333,12 @@ void* collectorTask(void* _tp)
 	while(tp->run)
 	{
 
-		if(DEBUGTHREAD)
+		if(DEBUG_THREAD)
 			printf("---------COLLECTOR---------\n");
 
 		pthread_mutex_lock(&(tp->queueLock));
 
-		if(DEBUGTHREAD)
+		if(DEBUG_THREAD)
 			printf("SIZE = %d\n", taskqueue->size);
 		
 		/*

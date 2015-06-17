@@ -18,7 +18,7 @@ int push(myQueue myq, task t)
 {
 	queue q = (queue) malloc(sizeof(_queue));
 
-	if(DEBUGQUEUE)
+	if(DEBUG_QUEUE)
 		printf("entrato in queue - push\n");
 
 	if(q == NULL)
@@ -40,7 +40,7 @@ task pop(myQueue myq)
 	queue q = myq->myqueue;
 	task t = NULL;
 
-	if(DEBUGQUEUE)
+	if(DEBUG_QUEUE)
 		printf("entrato in queue - pop\n");
 
 	if(q == NULL)
@@ -55,8 +55,10 @@ task pop(myQueue myq)
 	return t;
 }
 
-void populateTask(task t, int sX, int sY, int fX, int fY)
+void populateTask(task t, int i, int j, int sX, int sY, int fX, int fY)
 {
+	t->i = i;
+	t->j = j;
 	t->startX = sX;
 	t->startY = sY;
 	t->stopX = fX;

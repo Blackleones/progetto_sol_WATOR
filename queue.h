@@ -4,11 +4,19 @@
 #include <errno.h>
 #include "macro.h"
 
+#ifndef DEBUG_QUEUE
+#define DEBUG_QUEUE 0
+#endif
 typedef struct __task _task;
 typedef _task* task;
 
 struct __task
 {
+	/*
+		posizione relativa alla KNmatrix
+	*/
+	int i,j;
+
 	int startX, startY;
 	int stopX, stopY;
 };
@@ -80,6 +88,6 @@ void freeQueue(myQueue);
 	\param task, il task da inizializzare
 	\param startX, startY, stopX, stopY, i valori a cui inizializzare il task
 */
-void populateTask(task, int, int, int, int);
+void populateTask(task, int, int, int, int, int, int);
 
 #endif

@@ -9,7 +9,26 @@
 #include "wator.h"
 #define K 3
 #define N 3
+
+#ifndef DEBUG_THREAD
+#define DEBUG_THREAD 0
+#endif
+
+#ifndef DEBUG_THREAD_TASK
+#define DEBUG_THREAD_TASK 0
+#endif
+
 typedef enum _status {ELABORATO, IN_ELABORAZIONE,  DA_ELABORARE} status;
+
+typedef struct __KNmatrix _KNmatrix;
+typedef _KNmatrix* KNmatrix;
+
+struct __KNmatrix
+{
+	int nrow;
+	int ncol;
+	status** matrix;
+};
 
 typedef struct __threadPool _threadPool;
 typedef _threadPool* threadPool;
@@ -23,7 +42,7 @@ struct __threadPool
 	/*
 		matrice KN di supporto per elaborare il pianeta 
 	*/
-	status** KNmatrix;
+	KNmatrix KNM;
 	/*
 		struttura dati del pianeta
 	*/
@@ -90,7 +109,7 @@ int initpool(threadPool, wator_t*);
 	\retval status** la KNmatrix
 	\retval NULL se c'e' stato un errore, setta errno
 */
-status** initKNmatrix(threadPool);
+KNmatrix initKNmatrix(planet_t* plan);
 /*
 	\param threadPool, la struttura dati principale da liberare
 
@@ -118,11 +137,18 @@ void* dispatcherTask(void*);
 /*
 	il thread collector verifica che la coda sia vuota, che workingThread == 0 
 	e che collectorTask sia == 1 
-		in tal caso setta work = 0, collectorFlag = 0 stampa il pianeta, aggiorna il chronon, sveglia il dispatcher
-		e si rimette in attesa dei worker
+		in tal caso setta work = 0, collectorFlag = 0 stampa il pianeta, aggiorna il chronon, 
+		sveglia il dispatcher e si rimette in attesa dei worker
 */
 void* collectorTask(void*);
 
 int makeJoin(threadPool);
+
+/*
+	\param threadPool, la struttura dati principale
+
+	questa funzione calcola le coordinate della sottomatrice relativa al task che stiamo creando.
+*/
+void populateQueue(threadPool);
 
 #endif
