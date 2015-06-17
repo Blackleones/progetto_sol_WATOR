@@ -236,6 +236,9 @@ void freePool(threadPool tp)
 		printf("entrato in threadPool - freePool\n");
 
 	freeQueue(tp->taskqueue);
+	free(tp->KNM->matrix);
+	free(tp->KNM);
+	free_wator(tp->wator);
 }
 
 void* dispatcherTask(void* _tp)
@@ -257,22 +260,9 @@ void* dispatcherTask(void* _tp)
 		while(tp->workFlag != 0 || isEmpty(tp->taskqueue))
 			pthread_cond_wait(&(tp->waitingCollector), &(tp->queueLock));
 
+		/*inserisco tutti i task*/
 		populateQueue(tp);
-		/*
-		task t1 = (task) malloc(sizeof(_task));
-		task t2 = (task) malloc(sizeof(_task));
-		task t3 = (task) malloc(sizeof(_task));
-		task t4 = (task) malloc(sizeof(_task));
-		task t5 = (task) malloc(sizeof(_task));
-		task t6 = (task) malloc(sizeof(_task));
 
-		push(taskqueue, t1);
-		push(taskqueue, t2);
-		push(taskqueue, t3);
-		push(taskqueue, t4);
-		push(taskqueue, t5);
-		push(taskqueue, t6);
-		*/
 		tp->workFlag = 1;
 		pthread_cond_broadcast(&(tp->waitingDispatcher));
 		pthread_mutex_unlock(&(tp->queueLock));
