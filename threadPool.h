@@ -18,7 +18,7 @@
 #define DEBUG_THREAD_TASK 0
 #endif
 
-typedef enum _status {ELABORATO, IN_ELABORAZIONE,  DA_ELABORARE} status;
+typedef enum _status {WAITING, RUNNING, DONE} status;
 
 typedef struct __KNmatrix _KNmatrix;
 typedef _KNmatrix* KNmatrix;
@@ -159,5 +159,16 @@ int makeJoin(threadPool);
 	questa funzione calcola le coordinate della sottomatrice relativa al task che stiamo creando.
 */
 void populateQueue(threadPool);
+
+/*
+	\param KNmatrix, la matrice di supporto per i thread
+	\param int i, int j, le coordinate del quadrante che stiamo cercando di elaborare
+
+	la funzione verifica che i quadranti confinanti con KNmatrix[i][j] non stiano gia evolvendo
+
+	\retval 1 se nessuno dei quadranti confinanti è in evoluzione (RUNNING)
+	\retval 0 se uno dei quadranti confinanti è in evoluzione 
+*/
+int checkMutex(KNmatrix, int, int);
 
 #endif

@@ -16,7 +16,7 @@
 #define RIGA_FILE_SIZE 128
 #define NWORK_DEF 2
 #define CHRON_DEF 2
-   
+
 /** file di configurazione */
 static const char CONFIGURATION_FILE[] = "wator.conf";
 

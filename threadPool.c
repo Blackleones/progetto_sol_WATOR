@@ -99,7 +99,7 @@ KNmatrix initNKmatrix(planet_t* plan)
 
 		/*inizializzo la struttura a DA_ELABORARE*/
 		for(j = 0; j < KNncol; j++)
-			matrix[i][j] = DA_ELABORARE;
+			matrix[i][j] = WAITING;
 	}
 
 	knm->nrow = KNnrow;
@@ -107,6 +107,18 @@ KNmatrix initNKmatrix(planet_t* plan)
 	knm->matrix = matrix;
 
 	return knm;
+}
+
+int checkMutex(KNmatrix knm, int i, int j)
+{
+	int nrow = knm->nrow;
+	int ncol = knm->ncol;
+	status** matrix = knm->matrix;
+
+	return matrix[mod(i+1, nrow)][j] != RUNNING 
+		&& matrix[mod(i-1, nrow)][j] != RUNNING
+		&& matrix[i][mod(j+1, ncol)] != RUNNING
+		&& matrix[i][mod(j-1, ncol)] != RUNNING;
 }
 
 int initpool(threadPool tp, wator_t* w)

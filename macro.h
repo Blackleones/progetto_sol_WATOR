@@ -20,4 +20,5 @@
         if ( (s) == -1 ) { perror("ERRORE"); exit(errno); }
         
 #define error(errnoval, message) {errno = errnoval; perror(message);}
+        
 #endif

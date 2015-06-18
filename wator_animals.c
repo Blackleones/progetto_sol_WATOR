@@ -8,6 +8,9 @@
 
 #include "wator.h"
 
+/*seme per la funzione rand_r*/
+unsigned int seed = 10;
+
 /*cerco la cella con carattere 'c' e mano a mano che ne trovo calcolo
  la probabilità di sceglierla
 
@@ -44,25 +47,25 @@ static void getCellPositionWith(planet_t* planet, const int x, const int y, int*
 	*l = -1; 
 
 	if(cell_to_char(map[mod(x-1, nrow)][y]) == c)
-		if(rand() % ++nmatch == 0){/*cambiare: rand_r*/
+		if(rand_r(&seed) % ++nmatch == 0){/*cambiare: rand_r*/
 			*k = mod(x-1, nrow);
 			*l = y;
 		}
 	
 	if(cell_to_char(map[mod(x+1, nrow)][y]) == c)
-		if(rand() % ++nmatch == 0){
+		if(rand_r(&seed) % ++nmatch == 0){
 			*k = mod(x+1, nrow);
 			*l = y;
 		}
 		
 	if(cell_to_char(map[x][mod(y-1, ncol)]) == c)
-		if(rand() % ++nmatch == 0){
+		if(rand_r(&seed) % ++nmatch == 0){
 			*k = x;
 			*l = mod(y-1, ncol);
 		}
 
 	if(cell_to_char(map[x][mod(y+1, ncol)]) == c)
-		if(rand() % ++nmatch == 0){
+		if(rand_r(&seed) % ++nmatch == 0){
 			*k = x;
 			*l = mod(y+1, ncol);
 		}
