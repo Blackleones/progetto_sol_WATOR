@@ -208,7 +208,11 @@ int initpool(threadPool tp, wator_t* w)
 
 	for(i = 0; i < NWORK_DEF; i++)
 	{
-		checkError = pthread_create(&(tp->workers[i]), NULL, workerTask, (void*) &tp);
+		workerargs wa = (workerargs) malloc(sizeof(_workerargs));
+		wa->n = i;
+		wa->tp = tp;
+
+		checkError = pthread_create(&(tp->workers[i]), NULL, workerTask, (void*) &wa);
 
 		if(checkError != 0)
 		{
@@ -285,9 +289,11 @@ void* dispatcherTask(void* _tp)
 	pthread_exit(EXIT_SUCCESS);
 }
 
-void* workerTask(void* _tp)
+void* workerTask(void* _wa)
 {
-	threadPool tp = *((threadPool*) _tp);
+	workerargs wa = *((workerargs*) _wa);
+	int n = wa->n;
+	threadPool tp = wa->tp;
 	myQueue taskqueue = tp->taskqueue;
 
 	while(tp->run)

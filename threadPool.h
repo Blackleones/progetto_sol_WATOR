@@ -91,6 +91,15 @@ struct __threadPool
 	volatile int run;
 };
 
+typedef struct __workerargs _workerargs;
+typedef _workerargs* workerargs;
+
+struct __workerargs
+{
+	int n;
+	threadPool tp;
+};
+
 /*
 	\param threadPool, la struttura dati principale da inizializzare
 
