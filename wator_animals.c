@@ -105,6 +105,9 @@ static int updateMat(planet_t* planet, const int x, const int y, int k, int l, c
 		dtime[k][l] = dtime[x][y];
 		dtime[x][y] = 0;
 
+		if(action == EAT)
+			dtime[k][l] = 0;
+
 		return 0;
 	}
 

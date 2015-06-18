@@ -7,6 +7,21 @@ void printTask(task t)
 	printf("\n=============================================\n");
 }
 
+void printKNM(KNmatrix knm)
+{
+	int i = 0, j = 0;
+
+	printf("\n=============================================\n");
+	printf("	KN MATRIX					\n");
+	for(i = 0; i < knm->nrow; i++){
+		for(j = 0; j < knm->ncol; j++)
+			printf("%d ", knm->matrix[i][j]);
+
+		printf("\n");
+	}
+	printf("\n=============================================\n");
+}
+
 void populateQueue(threadPool tp)
 {
 	int i = 0, j = 0;
@@ -244,7 +259,6 @@ void freePool(threadPool tp)
 void* dispatcherTask(void* _tp)
 {
 	threadPool tp = *((threadPool*) _tp);
-	myQueue taskqueue = tp->taskqueue;
 
 	while(tp->run)
 	{
@@ -327,6 +341,9 @@ void* collectorTask(void* _tp)
 			printf("---------COLLECTOR---------\n");
 
 		pthread_mutex_lock(&(tp->queueLock));
+
+		if(DEBUG_THREAD_TASK)
+			printKNM(tp->KNM);
 
 		if(DEBUG_THREAD)
 			printf("SIZE = %d\n", taskqueue->size);
