@@ -1,5 +1,55 @@
 #include "threadPool.h"
 
+static void stampa(planet_t* planet)
+{
+	system("clear");
+	printf("\n");
+	//sleep(1);
+	int i = 0, j = 0; 
+	int nrow = planet->nrow;
+	int ncol = planet->ncol;
+	cell_t** map = planet->w;
+
+	for(i = 0; i < nrow; i++)
+	{
+		for(j = 0; j < ncol-1; j++)
+			printf("%c ", cell_to_char(map[i][j]));
+
+		printf("%c", cell_to_char(map[i][j]));
+		printf("\n");
+	}
+}
+
+static void printKNMMATRIX(KNmatrix KNM)
+{
+	int i = 0, j = 0;
+
+	printf("\n|||||== KNM ==|||||\n");
+
+	for(i = 0; i < KNM->nrow; i++)
+	{
+		for(j = 0; j <KNM->ncol; j++)
+			printf("%d ", KNM->matrix[i][j]);
+
+		printf("\n");
+	}
+}
+
+static void printFlagMap(int** flagMap, int nrow, int ncol)
+{
+	int i = 0, j = 0;
+
+	printf("\n|||||== FLAGMAP ==|||||\n");
+
+	for(i = 0; i < nrow; i++)
+	{
+		for(j = 0; j < ncol; j++)
+			printf("%d ", flagMap[i][j]);
+
+		printf("\n");
+	}	
+}
+
 void printTask(task t)
 {
 	printf("\n=============================================\n");
@@ -109,6 +159,16 @@ KNmatrix initNKmatrix(planet_t* plan)
 	return knm;
 }
 
+void loadKNM(KNmatrix knm)
+{
+	int i = 0, j = 0;
+
+	for(i = 0; j < knm->nrow; i++)
+		for(j = 0; j < knm->ncol; j++)
+			knm->matrix[i][j] = WAITING;
+
+}
+
 int checkMutex(KNmatrix knm, int i, int j)
 {
 	int nrow = knm->nrow;
@@ -179,7 +239,7 @@ int evolve(task t, wator_t* pw, int** flagMap)
 				if(action == MOVE)
 					flagMap[k][l] = STOP;
 
-				flagMap[i][j] = STOP;
+				/*flagMap[i][j] = STOP;*/
 			}
 		}
 	}
@@ -400,11 +460,11 @@ void* dispatcherTask(void* _tp)
 {
 	threadPool tp = *((threadPool*) _tp);
 
-	loadFlagMap(tp->wator->plan, tp->flagMap);
-
 	while(tp->run)
 	{
-
+		loadFlagMap(tp->wator->plan, tp->flagMap);
+		loadKNM(tp->KNM);
+		
 		if(DEBUG_THREAD)
 			printf("---------DISPATCHER---------\n");
 
@@ -433,6 +493,7 @@ void* workerTask(void* _wa)
 	int n = wa->n;
 	threadPool tp = wa->tp;
 	myQueue taskqueue = tp->taskqueue;
+	int** flagMap = tp->flagMap;
 
 	while(tp->run)
 	{
@@ -454,13 +515,38 @@ void* workerTask(void* _wa)
 
 		if(DEBUG_THREAD_TASK)
 			printTask(t);
+		pthread_mutex_unlock(&(tp->queueLock));
 
+		/*
+			acquisisco la lock
+				-mi metto in attesase un thread sta elaborando una porzione vicino al mio task
+			rilascio la lock
+			elaboro
+		*/
+		pthread_mutex_lock(&(tp->KNMLock));
+		(tp->workingThread)++;
+
+		while(checkMutex(tp->KNM, t->i, t->j) == 0)
+			pthread_cond_wait(&(tp->waitingTask), &(tp->KNMLock));
+
+		tp->KNM->matrix[t->i][t->j] = RUNNING;
+		pthread_mutex_unlock(&(tp->KNMLock));
+
+		evolve(t, tp->wator, flagMap);
+
+		pthread_mutex_lock(&(tp->KNMLock));
+		(tp->workingThread--);
+		tp->KNM->matrix[t->i][t->j] = DONE;
+
+		/*se la cosa è vuota sveglio il collector*/
 		if(isEmpty(taskqueue) == 0){
 			tp->collectorFlag = 1;
 			pthread_cond_signal(&(tp->waitingWorkers));
 		}
 
-		pthread_mutex_unlock(&(tp->queueLock));
+		/*sveglio tutti i worker in attesa per elaborare il task*/
+		pthread_cond_broadcast(&(tp->waitingTask));
+		pthread_mutex_unlock(&(tp->KNMLock));
 	}
 
 	pthread_exit(EXIT_SUCCESS);
@@ -495,6 +581,11 @@ void* collectorTask(void* _tp)
 
 		tp->collectorFlag = 0;
 		tp->workFlag = 0;
+
+		//printKNMMATRIX(tp->KNM);
+		//printFlagMap(tp->flagMap, tp->wator->plan->nrow, tp->wator->plan->ncol);
+		stampa(tp->wator->plan);
+
 		pthread_cond_signal(&(tp->waitingCollector));
 		pthread_mutex_unlock(&(tp->queueLock));
 	}

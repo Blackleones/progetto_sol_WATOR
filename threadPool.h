@@ -7,8 +7,8 @@
 #include "macro.h"
 #include "queue.h"
 #include "wator.h"
-#define K 3
-#define N 3
+#define K 2
+#define N 2
 
 #ifndef DEBUG_THREAD
 #define DEBUG_THREAD 0
@@ -189,6 +189,10 @@ void populateQueue(threadPool);
 	\retval 0 se uno dei quadranti confinanti è in evoluzione 
 */
 int checkMutex(KNmatrix, int, int);
+/*
+
+*/
+void loadKNM(KNmatrix);
 
 /*
 	\param planet_t*, pianeta che deve evolvere
