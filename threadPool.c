@@ -121,6 +121,91 @@ int checkMutex(KNmatrix knm, int i, int j)
 		&& matrix[i][mod(j-1, ncol)] != RUNNING;
 }
 
+void loadFlagMap(planet_t* plan, int** flagMap)
+{
+	cell_t** map = plan->w;
+	int i = 0, j = 0;
+	int nrow = plan->nrow;
+	int ncol = plan->ncol;
+
+	for(i = 0; i < nrow; i++)
+		for(j = 0; j < ncol; j++)
+			if(map[i][j] != WATER)
+				flagMap[i][j] = MOVE;
+}
+
+int evolve(task t, wator_t* pw, int** flagMap)
+{
+	int i = 0, j = 0;
+	int k = 0, l = 0;
+	int action = 0;
+	cell_t** map = pw->plan->w;
+
+	for(i = t->startX; i <= t->stopX; i++)
+	{
+		for(j = t->startY; j <= t->stopY; j++)
+		{
+			if(flagMap[i][j] == MOVE && map[i][j] == SHARK)
+			{
+				action = shark_rule2(pw, i, j, &k, &l);
+
+				if(action == -1)
+					return -1;
+
+				if(action != DEAD)
+				{
+					action = shark_rule1(pw, i, j, &k, &l);
+
+					if(action == -1)
+						return -1;
+
+					if(action == EAT || action == MOVE)
+						flagMap[k][l] = STOP;
+				}
+			}
+
+			if(flagMap[i][j] == MOVE && map[i][j] == FISH)
+			{
+				action = fish_rule4(pw, i, j, &k, &l);
+
+				if(action == -1)
+					return -1;
+
+				action = fish_rule3(pw, i, j, &k, &l);
+
+				if(action == -1)
+					return -1;
+
+				if(action == MOVE)
+					flagMap[k][l] = STOP;
+
+				flagMap[i][j] = STOP;
+			}
+		}
+	}
+
+	return 1;
+}
+
+static int** initFlagMap(int nrow, int ncol)
+{
+	int i = 0;
+	int** flagMap = (int**) calloc(nrow, sizeof(int*));
+
+	if(flagMap == NULL)
+		return NULL;
+
+	for(i = 0; i < nrow; i++)
+	{
+		flagMap[i] = (int*) calloc(ncol, sizeof(int));
+
+		if(flagMap[i] == NULL)
+			return NULL;
+	}
+
+	return flagMap;
+}
+
 int initpool(threadPool tp, wator_t* w)
 {
 	int i = 0;
@@ -131,9 +216,10 @@ int initpool(threadPool tp, wator_t* w)
 
 	tp->wator = w;
 
-	/*inizializzo la coda*/
+	/*
+		inizializzo la coda
+	*/
 	tp->taskqueue = (myQueue) malloc(sizeof(_myQueue));
-	tp->KNM = initNKmatrix(tp->wator->plan);
 
 	if(tp->taskqueue == NULL)
 	{
@@ -141,14 +227,36 @@ int initpool(threadPool tp, wator_t* w)
 		return -1;
 	}
 
+	/*
+		inizializzo la matrice di supporto ai thread
+	*/
+	tp->KNM = initNKmatrix(tp->wator->plan);
+
 	if(tp->KNM == NULL)
 	{
 		error(EAGAIN, "errore initpool - malloc KNmatrix");
 		return -1;		
 	}
 
+	/*
+		inizializzo la matrice di supporto degli spostamenti
+	*/
+	tp->flagMap = initFlagMap(tp->wator->plan->nrow, tp->wator->plan->ncol);
+
+	if(tp->flagMap == NULL)
+	{
+		error(EAGAIN, "errore initpool - calloc flagMap");
+		return -1;
+	}
+
+	/*
+		inizializzo la struttura che gestisce la coda
+	*/
 	initMyQueue(tp->taskqueue);
 
+	/*
+		setto i flag per gestire i thread
+	*/
 	tp->run = 1;
 	tp->workFlag = 0;
 	tp->collectorFlag = 0;
@@ -163,6 +271,14 @@ int initpool(threadPool tp, wator_t* w)
 	{
 		error(checkError, "errore initpool - inizializzazione lock");
 		return -1;
+	}
+
+	checkError = pthread_mutex_init(&(tp->KNMLock), NULL);
+
+	if(checkError != 0)
+	{
+		error(checkError, "errore initpool - inizializzazione lock");
+		return -1;		
 	}
 
 	checkError = pthread_cond_init(&(tp->waitingDispatcher), NULL);
@@ -189,6 +305,13 @@ int initpool(threadPool tp, wator_t* w)
 		return -1;
 	}
 
+	checkError = pthread_cond_init(&(tp->waitingTask), NULL);
+
+	if(checkError != 0)
+	{
+		error(checkError, "errore initpool - inizializzazione cw waitingTask");
+		return -1;
+	}
 	/*
 		inizializzo dispatcher
 	*/
@@ -267,6 +390,7 @@ void freePool(threadPool tp)
 		printf("entrato in threadPool - freePool\n");
 
 	freeQueue(tp->taskqueue);
+	/*liberare tutte le colonne*/
 	free(tp->KNM->matrix);
 	free(tp->KNM);
 	free_wator(tp->wator);
@@ -275,6 +399,8 @@ void freePool(threadPool tp)
 void* dispatcherTask(void* _tp)
 {
 	threadPool tp = *((threadPool*) _tp);
+
+	loadFlagMap(tp->wator->plan, tp->flagMap);
 
 	while(tp->run)
 	{
@@ -318,13 +444,6 @@ void* workerTask(void* _wa)
 			acquisisco la lock
 				-se la coda è vuota estraggo un task
 			rilascio la lock
-				-elaboro il task
-
-			<da fare>
-			acquisisco la lock sulla matrice
-				-controllo i vicini
-			rilascio la lock
-				-elaboro
 		*/
 		pthread_mutex_lock(&(tp->queueLock));
 

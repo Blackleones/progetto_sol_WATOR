@@ -44,6 +44,10 @@ struct __threadPool
 	*/
 	KNmatrix KNM;
 	/*
+		matrice di supporto per controllare gli spostamenti degli animali
+	*/
+	int** flagMap;
+	/*
 		struttura dati del pianeta
 	*/
 	wator_t* wator;
@@ -59,6 +63,10 @@ struct __threadPool
 	*/
 	pthread_mutex_t queueLock;
 	/*
+		lock da utilizzare sulla matrice KNM per la sincronizzazione dei thread
+	*/
+	pthread_mutex_t KNMLock;
+	/*
 		viene usata dai worker per aspettare che il dispatcher abbia riempito
 		la taskqueue
 	*/
@@ -73,6 +81,12 @@ struct __threadPool
 		quando un worker vede la lista vuota avvisa il collector
 	*/
 	pthread_cond_t waitingWorkers;
+	/*
+		viene usata dai worker per rimanere in attesa nel caso ci sia
+		un thread che sta elaborando una porzione della mappa confinante
+		alla sua
+	*/
+	pthread_cond_t waitingTask;
 	/*
 		# worker che stanno effettuando una elaborazione
 	*/
@@ -151,6 +165,11 @@ void* dispatcherTask(void*);
 */
 void* collectorTask(void*);
 
+/*
+	\param threadPool, struttura dati principale
+
+	questa funzione crea le Join con tutti i thread della struttura dati principale
+*/
 int makeJoin(threadPool);
 
 /*
@@ -170,5 +189,37 @@ void populateQueue(threadPool);
 	\retval 0 se uno dei quadranti confinanti è in evoluzione 
 */
 int checkMutex(KNmatrix, int, int);
+
+/*
+	\param planet_t*, pianeta che deve evolvere
+	\param int**, matrice di supporto per gli spostamenti
+
+	questa funzione prepara la flagMap mettendo tutti gli
+	elementi != WATER uguali a MOVE
+
+	MOVE: l'animale di posizione [x][y] puo' spostarsi
+	STOP: l'animale di posizione [x][y] si è gia spostato / 
+			in posizione [x][y] c'è l'acqua
+
+	\retval 1 se la preparazione è andata a buon fine
+	\retval -1 altrimenti
+*/
+void loadFlagMap(planet_t*, int**);
+
+/*
+	\param task, il task da eseguire
+	\param planet_t*, il pianeta da evolvere
+	\param int**, la flagMap di supporto per gli spostamenti
+
+	la funzione evolve una porzione del pianeta identificata da
+		startX, stopX
+		startY, stopY
+
+	e verificando se l'animale di posizione [x][y] puo' essere spostato o 
+
+	\retval 1 se l'evoluzione è riuscita con successo
+	\retval -1 altrimenti
+*/
+int evolve(task, wator_t*, int**);
 
 #endif
