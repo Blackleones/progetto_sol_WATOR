@@ -556,6 +556,7 @@ void* collectorTask(void* _tp)
 {
 	threadPool tp = *((threadPool*) _tp);
 	myQueue taskqueue = tp->taskqueue;
+	volatile currentChronon = 0;
 
 	while(tp->run)
 	{
@@ -584,7 +585,13 @@ void* collectorTask(void* _tp)
 
 		//printKNMMATRIX(tp->KNM);
 		//printFlagMap(tp->flagMap, tp->wator->plan->nrow, tp->wator->plan->ncol);
-		stampa(tp->wator->plan);
+		if(currentChronon % tp->wator->chronon)
+		{
+			stampa(tp->wator->plan);
+			currentChronon = 0;
+		}
+		else
+			currentChronon++;
 
 		pthread_cond_signal(&(tp->waitingCollector));
 		pthread_mutex_unlock(&(tp->queueLock));
