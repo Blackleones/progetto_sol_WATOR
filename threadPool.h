@@ -193,8 +193,11 @@ void populateQueue(threadPool);
 	\retval 0 se uno dei quadranti confinanti è in evoluzione 
 */
 int checkMutex(KNmatrix, int, int);
+int checkMutexDone(KNmatrix);
 /*
+	\param KNmatrix, la matrice di supporto per i thread
 
+	la funzione setta tutta la matrice a WAITING
 */
 void loadKNM(KNmatrix);
 

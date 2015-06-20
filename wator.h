@@ -14,7 +14,7 @@
 #include <time.h>
 #include "macro.h"
 #define RIGA_FILE_SIZE 128
-#define NWORK_DEF 2
+#define NWORK_DEF 5
 #define CHRON_DEF 5
 
 /** file di configurazione */

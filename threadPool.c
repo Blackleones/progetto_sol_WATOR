@@ -166,6 +166,26 @@ int checkMutex(KNmatrix knm, int i, int j)
 		&& matrix[i][mod(j-1, ncol)] != RUNNING;
 }
 
+int checkMutexDone(KNmatrix knm)
+{
+	int i = 0, j = 0;
+
+	while(i < knm->nrow)
+	{
+		while(j < knm->ncol)
+		{
+			if(knm->matrix[i][j] == DONE)
+				j++;
+			else
+				return 0;
+		}
+
+		i++;
+	}
+
+	return 1;
+}
+
 void loadFlagMap(planet_t* plan, int** flagMap)
 {
 	cell_t** map = plan->w;
@@ -307,6 +327,9 @@ int initpool(threadPool tp, wator_t* w)
 	tp->collectorFlag = 0;
 	tp->workingThread = 0;
 
+	loadFlagMap(tp->wator->plan, tp->flagMap);
+	loadKNM(tp->KNM);
+
 	/*
 		inizializzo mutex e cw
 	*/
@@ -447,9 +470,6 @@ void* dispatcherTask(void* _tp)
 
 	while(tp->run)
 	{
-		loadFlagMap(tp->wator->plan, tp->flagMap);
-		loadKNM(tp->KNM);
-		
 		if(DEBUG_THREAD_MATRIX)
 		{
 			printFlagMap(tp->flagMap, tp->wator->plan->nrow, tp->wator->plan->ncol, "DISPATCHER:");
@@ -529,11 +549,11 @@ void* workerTask(void* _wa)
 		evolve(t, tp->wator, flagMap);
 
 		pthread_mutex_lock(&(tp->KNMLock));
-		(tp->workingThread--);
-		tp->KNM->matrix[t->i][t->j] = DONE;
+		tp->KNM->matrix[t->i][t->j] = DONE;		
+		(tp->workingThread)--;
 
 		/*se la cosa è vuota sveglio il collector*/
-		if(isEmpty(taskqueue) == 0){
+		if(checkMutexDone(tp->KNM) == 1){
 			tp->collectorFlag = 1;
 			pthread_cond_signal(&(tp->waitingWorkers));
 		}
@@ -558,7 +578,7 @@ void* collectorTask(void* _tp)
 		if(DEBUG_THREAD)
 			printf("---------COLLECTOR---------\n");
 
-		pthread_mutex_lock(&(tp->queueLock));
+		pthread_mutex_lock(&(tp->KNMLock));
 
 		if(DEBUG_THREAD_TASK)
 			printKNM(tp->KNM, "COLLECTOR");
@@ -572,7 +592,7 @@ void* collectorTask(void* _tp)
 			lock
 		*/
 		while(tp->collectorFlag == 0 || tp->workingThread != 0/* || isEmpty(taskqueue)*/)
-			pthread_cond_wait(&(tp->waitingWorkers), &(tp->queueLock));
+			pthread_cond_wait(&(tp->waitingWorkers), &(tp->KNMLock));
 
 		tp->collectorFlag = 0;
 		tp->workFlag = 0;
@@ -591,8 +611,11 @@ void* collectorTask(void* _tp)
 		else
 			currentChronon++;
 
+		loadFlagMap(tp->wator->plan, tp->flagMap);
+		loadKNM(tp->KNM);
+
 		pthread_cond_signal(&(tp->waitingCollector));
-		pthread_mutex_unlock(&(tp->queueLock));
+		pthread_mutex_unlock(&(tp->KNMLock));
 	}
 
 	pthread_exit(EXIT_SUCCESS);
