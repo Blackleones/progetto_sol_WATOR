@@ -331,7 +331,7 @@ void* collectorTask(void* _tp)
 			printFlagMap(tp->flagMap, tp->wator->plan->nrow, tp->wator->plan->ncol, "COLLECTOR");
 		}
 
-		if(currentChronon % tp->wator->chronon)
+		if(currentChronon % tp->wator->chronon == 0)
 		{
 			stampa(tp->wator->plan);
 			currentChronon = 0;
