@@ -22,4 +22,5 @@
 #define GREEN "\x1B[32m"
 #define BLUE  "\x1B[34m"
 #define NONE  "\033[0m"
+
 #endif
