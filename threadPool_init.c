@@ -284,6 +284,12 @@ void freePool(threadPool tp)
 	/*
 		libero le mutex e cw
 	*/
+	pthread_mutex_destroy(&(tp->queueLock));
+	pthread_mutex_destroy(&(tp->KNMLock));
+	pthread_cond_destroy(&(tp->waitingCollector));
+	pthread_cond_destroy(&(tp->waitingDispatcher));
+	pthread_cond_destroy(&(tp->waitingWorkers));
+	pthread_cond_destroy(&(tp->waitingTask));
 }
 
 int makeJoin(threadPool tp)
