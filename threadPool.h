@@ -7,8 +7,8 @@
 #include "macro.h"
 #include "queue.h"
 #include "wator.h"
-#define K 2
-#define N 2
+#define K 5
+#define N 5
 
 #ifndef DEBUG_THREAD
 #define DEBUG_THREAD 0
@@ -193,6 +193,16 @@ void populateQueue(threadPool);
 	\retval 0 se uno dei quadranti confinanti è in evoluzione 
 */
 int checkMutex(KNmatrix, int, int);
+
+/*
+	\param KNMmatrix, la matride di supporto per i thread
+
+	la funzione ritorna 1 se tutti i quadranti sono stati elaborati, 
+	altrimenti 0
+
+	\retval 1, tutti i quadranti == DONE
+	\retval 0, altrimenti
+*/
 int checkMutexDone(KNmatrix);
 /*
 	\param KNmatrix, la matrice di supporto per i thread

@@ -2,9 +2,9 @@
 
 static void stampa(planet_t* planet)
 {
+	usleep(100000);
 	system("clear");
 	printf("\n");
-	//sleep(1);
 	int i = 0, j = 0; 
 	int nrow = planet->nrow;
 	int ncol = planet->ncol;
@@ -12,10 +12,18 @@ static void stampa(planet_t* planet)
 
 	for(i = 0; i < nrow; i++)
 	{
-		for(j = 0; j < ncol-1; j++)
-			printf("%c ", cell_to_char(map[i][j]));
+		for(j = 0; j < ncol; j++)
+		{
+			if(cell_to_char(map[i][j]) == 'W')
+				printf("%s%c%s ", BLUE, cell_to_char(map[i][j]), NONE);
 
-		printf("%c", cell_to_char(map[i][j]));
+			if(cell_to_char(map[i][j]) == 'S')
+				printf("%s%c%s ", RED, cell_to_char(map[i][j]), NONE);
+
+			if(cell_to_char(map[i][j]) == 'F')
+				printf("%s%c%s ", GREEN, cell_to_char(map[i][j]), NONE);
+		}
+
 		printf("\n");
 	}
 }
@@ -35,14 +43,14 @@ static void printFlagMap(int** flagMap, int nrow, int ncol, char* message)
 	}	
 }
 
-void printTask(task t)
+static void printTask(task t)
 {
 	printf("\n=============================================\n");
 	printf("=\t[%d][%d]:\n=\t\tV: %d -> %d\n=\t\tO: %d -> %d\n=", t->i, t->j, t->startY, t->stopY, t->startX, t->stopX);
 	printf("\n=============================================\n");
 }
 
-void printKNM(KNmatrix knm, char* message)
+static void printKNM(KNmatrix knm, char* message)
 {
 	int i = 0, j = 0;
 
@@ -244,7 +252,7 @@ int evolve(task t, wator_t* pw, int** flagMap)
 				if(action == MOVE)
 					flagMap[k][l] = STOP;
 
-				/*flagMap[i][j] = STOP;*/
+				flagMap[i][j] = STOP;
 			}
 		}
 	}

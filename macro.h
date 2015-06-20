@@ -14,11 +14,12 @@
 		***																  	***
  		***********************************************************************
 */
-/*se compilo con -DDEBUG setto DEBUG = 1 e avvio tutte le stampe di debug*/
-
-#define ec_meno1(s) \
-        if ( (s) == -1 ) { perror("ERRORE"); exit(errno); }
-        
+/*stampa errori*/        
 #define error(errnoval, message) {errno = errnoval; perror(message);}
         
+/*colori console*/
+#define RED   "\x1B[31m"
+#define GREEN "\x1B[32m"
+#define BLUE  "\x1B[34m"
+#define NONE  "\033[0m"
 #endif
