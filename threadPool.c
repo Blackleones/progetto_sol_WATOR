@@ -1,5 +1,8 @@
 #include "threadPool.h"
 
+/*
+	FUNZIONI DI DEBUG
+*/
 static void stampa(planet_t* planet)
 {
 	usleep(100000);
@@ -65,6 +68,9 @@ static void printKNM(KNmatrix knm, char* message)
 	printf("\n=============================================\n");
 }
 
+/*
+	FUNZIONI DI LIBRERIA
+*/
 void populateQueue(threadPool tp)
 {
 	int i = 0, j = 0;
@@ -462,14 +468,38 @@ int makeJoin(threadPool tp)
 
 void freePool(threadPool tp)
 {
+	int i = 0;
+
 	if(DEBUG_THREAD)
 		printf("entrato in threadPool - freePool\n");
 
 	freeQueue(tp->taskqueue);
-	/*liberare tutte le colonne*/
+	
+	/*
+		libero la KNmatrix
+	*/
+	for(i = 0; i < tp->KNM->nrow; i++)
+		free(tp->KNM->matrix[i]);
+
 	free(tp->KNM->matrix);
 	free(tp->KNM);
+	
+	/*
+		libero flagMap
+	*/
+	for(i = 0; i < tp->wator->plan->nrow; i++)
+		free(tp->flagMap[i]);
+
+	free(tp->flagMap);
+
+	/*
+		libero wator
+	*/
 	free_wator(tp->wator);
+
+	/*
+		libero le mutex e cw
+	*/
 }
 
 void* dispatcherTask(void* _tp)
