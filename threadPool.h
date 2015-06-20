@@ -14,6 +14,10 @@
 #define DEBUG_THREAD 0
 #endif
 
+#ifndef DEBUG_THREAD_MATRIX
+#define DEBUG_THREAD_MATRIX 0
+#endif
+
 #ifndef DEBUG_THREAD_TASK
 #define DEBUG_THREAD_TASK 0
 #endif

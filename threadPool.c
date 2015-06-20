@@ -20,26 +20,11 @@ static void stampa(planet_t* planet)
 	}
 }
 
-static void printKNMMATRIX(KNmatrix KNM)
+static void printFlagMap(int** flagMap, int nrow, int ncol, char* message)
 {
 	int i = 0, j = 0;
 
-	printf("\n|||||== KNM ==|||||\n");
-
-	for(i = 0; i < KNM->nrow; i++)
-	{
-		for(j = 0; j <KNM->ncol; j++)
-			printf("%d ", KNM->matrix[i][j]);
-
-		printf("\n");
-	}
-}
-
-static void printFlagMap(int** flagMap, int nrow, int ncol)
-{
-	int i = 0, j = 0;
-
-	printf("\n|||||== FLAGMAP ==|||||\n");
+	printf("\n|||||== %s: FLAGMAP ==|||||\n", message);
 
 	for(i = 0; i < nrow; i++)
 	{
@@ -57,11 +42,11 @@ void printTask(task t)
 	printf("\n=============================================\n");
 }
 
-void printKNM(KNmatrix knm)
+void printKNM(KNmatrix knm, char* message)
 {
 	int i = 0, j = 0;
 
-	printf("\n=============================================\n");
+	printf("\n=======================%s======================\n", message);
 	printf("	KN MATRIX					\n");
 	for(i = 0; i < knm->nrow; i++){
 		for(j = 0; j < knm->ncol; j++)
@@ -163,7 +148,7 @@ void loadKNM(KNmatrix knm)
 {
 	int i = 0, j = 0;
 
-	for(i = 0; j < knm->nrow; i++)
+	for(i = 0; i < knm->nrow; i++)
 		for(j = 0; j < knm->ncol; j++)
 			knm->matrix[i][j] = WAITING;
 
@@ -465,6 +450,12 @@ void* dispatcherTask(void* _tp)
 		loadFlagMap(tp->wator->plan, tp->flagMap);
 		loadKNM(tp->KNM);
 		
+		if(DEBUG_THREAD_MATRIX)
+		{
+			printFlagMap(tp->flagMap, tp->wator->plan->nrow, tp->wator->plan->ncol, "DISPATCHER:");
+			printKNM(tp->KNM, "DISPATCHER:");
+		}
+
 		if(DEBUG_THREAD)
 			printf("---------DISPATCHER---------\n");
 
@@ -526,6 +517,9 @@ void* workerTask(void* _wa)
 		pthread_mutex_lock(&(tp->KNMLock));
 		(tp->workingThread)++;
 
+		if(DEBUG_THREAD_MATRIX)
+			printKNM(tp->KNM, "WORKER:");
+
 		while(checkMutex(tp->KNM, t->i, t->j) == 0)
 			pthread_cond_wait(&(tp->waitingTask), &(tp->KNMLock));
 
@@ -556,7 +550,7 @@ void* collectorTask(void* _tp)
 {
 	threadPool tp = *((threadPool*) _tp);
 	myQueue taskqueue = tp->taskqueue;
-	volatile currentChronon = 0;
+	volatile int currentChronon = 0;
 
 	while(tp->run)
 	{
@@ -567,7 +561,7 @@ void* collectorTask(void* _tp)
 		pthread_mutex_lock(&(tp->queueLock));
 
 		if(DEBUG_THREAD_TASK)
-			printKNM(tp->KNM);
+			printKNM(tp->KNM, "COLLECTOR");
 
 		if(DEBUG_THREAD)
 			printf("SIZE = %d\n", taskqueue->size);
@@ -583,8 +577,12 @@ void* collectorTask(void* _tp)
 		tp->collectorFlag = 0;
 		tp->workFlag = 0;
 
-		//printKNMMATRIX(tp->KNM);
-		//printFlagMap(tp->flagMap, tp->wator->plan->nrow, tp->wator->plan->ncol);
+		if(DEBUG_THREAD_MATRIX)
+		{
+			printKNM(tp->KNM, "COLLECTOR:");
+			printFlagMap(tp->flagMap, tp->wator->plan->nrow, tp->wator->plan->ncol, "COLLECTOR");
+		}
+
 		if(currentChronon % tp->wator->chronon)
 		{
 			stampa(tp->wator->plan);
