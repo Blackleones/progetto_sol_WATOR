@@ -3,7 +3,7 @@ CFLAG = -Wall -pedantic -g
 CFLAGPTHREAD = -pthread
 
 #librerie ../lib
-LIBDIR = lib
+LIBDIR = ../lib
 
 #operazione linking
 LIBS= -L $(LIBDIR)
@@ -21,7 +21,7 @@ object3 = threadPool.o threadPool_init.o
 
 #creazione librerie
 lib: $(object1)
-	-mkdir -p lib
+	-mkdir -p ../lib
 	-rm -f $(LIBNAME1)
 	-rm -f $(LIBDIR)/$(LIBNAME1)
 	ar -r $(LIBNAME1) $(object1)
@@ -30,7 +30,6 @@ lib: $(object1)
 	make lib2
 
 lib2: $(object2)
-	-mkdir -p lib
 	-rm -f $(LIBNAME2)
 	-rm -f $(LIBDIR)/$(LIBNAME2)
 	ar -r $(LIBNAME2) $(object2)
@@ -39,7 +38,6 @@ lib2: $(object2)
 	make lib3
 
 lib3: $(object3)
-	-mkdir -p lib
 	-rm -f $(LIBNAME3)
 	-rm -f $(LIBDIR)/$(LIBNAME3)
 	ar -r $(LIBNAME3) $(object3)
