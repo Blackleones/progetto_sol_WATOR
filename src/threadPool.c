@@ -234,11 +234,39 @@ void* workerTask(void* _wa)
 	myQueue taskqueue = tp->taskqueue;
 	int** flagMap = tp->flagMap;
 
+	/*
+		gestione del file
+	*/
+	FILE* fd = NULL;
+	char* filename = (char*) malloc(STRING_SIZE*sizeof(char));
+	char* snum = (char*) malloc(STRING_SIZE*sizeof(char));
+
+	/*
+		effettuo la lock per non provocare una race condition su fopen
+		senza lock ottengo una segmentation fault per nwork molto elevato
+	*/
+	pthread_mutex_lock(&(tp->queueLock));
+	sprintf(snum, "%d", n);
+	strcpy(filename, WATOR_FILE);
+	strcat(filename, snum);
+	
+	if((fd = fopen(filename, "w")) == NULL)
+	{
+		perror("threadPool - worker, errore creazione file");
+		pthread_mutex_unlock(&(tp->queueLock));
+		pthread_exit((void*) -1);
+	}
+
+	fclose(fd);
+	free(snum);
+	free(filename);
+	pthread_mutex_unlock(&(tp->queueLock));
+
 	while(tp->run)
 	{
 
 		if(DEBUG_THREAD)
-			printf("---------WORKER---------\n");
+			printf("---------WORKER %d---------\n", n);
 
 		/*
 			acquisisco la lock

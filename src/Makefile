@@ -21,6 +21,7 @@ object3 = threadPool.o threadPool_init.o
 
 #creazione librerie
 lib: $(object1)
+	-rm -R ../lib
 	-mkdir -p ../lib
 	-rm -f $(LIBNAME1)
 	-rm -f $(LIBDIR)/$(LIBNAME1)
@@ -57,7 +58,8 @@ build:
 	
 clean:
 	-rm -f *.o
-
+	-rm -f wator_worker_*
+	
 #generazione eseguibili
 wator: watorprocess.o
 	$(CC) -o $@ $^ $(LIBS) -lFinal -lpthread

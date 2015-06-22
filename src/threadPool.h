@@ -4,11 +4,15 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <string.h>
 #include "macro.h"
 #include "queue.h"
 #include "wator.h"
 #define K 5
 #define N 5
+
+#define STRING_SIZE 101
+#define WATOR_FILE "wator_worker_"
 
 #ifndef DEBUG_THREAD
 #define DEBUG_THREAD 0

@@ -231,7 +231,7 @@ int initpool(threadPool tp, wator_t* w)
 		return -1;
 	}
 
-	for(i = 0; i < NWORK_DEF; i++)
+	for(i = 0; i < tp->wator->nwork; i++)
 	{
 		workerargs wa = (workerargs) malloc(sizeof(_workerargs));
 		wa->n = i;
@@ -302,7 +302,7 @@ int makeJoin(threadPool tp)
 	checkError = pthread_join(tp->dispatcher, NULL);
 	checkError = pthread_join(tp->collector, NULL);
 
-	for(i = 0; i < NWORK_DEF; i++)
+	for(i = 0; i < tp->wator->nwork; i++)
 	{
 		checkError = pthread_join(tp->workers[i], NULL);
 		

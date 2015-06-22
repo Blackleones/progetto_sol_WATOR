@@ -47,23 +47,25 @@ int main(int argc, char* argv[])
 		{
 			case 'n':
 			{
-				if((n_worker = isNum(optarg)) == -1)
+				if(isNum(optarg) == -1)
 				{
 					error(EINVAL, "watorprocess - errore argomento n_worker");
 					exit(EXIT_FAILURE);
 				}
 
+				n_worker = atoi(optarg);
 				optionFlag[0]++;
 				break;
 			}
 			case 'v':
 			{
-				if((n_chronon = isNum(optarg)) == -1)
+				if(isNum(optarg) == -1)
 				{
 					error(EINVAL, "watorprocess - errore argomento n_chronon");
 					exit(EXIT_FAILURE);
 				}
 
+				n_chronon = atoi(optarg);
 				optionFlag[1]++;
 				break;
 			}
@@ -118,7 +120,10 @@ int main(int argc, char* argv[])
 	/*
 		creo il wator, inserisco n_worker e n_chronon se sono stati passati dall'utente
 	*/
-	wator = new_wator(fileplanet);
+	if((wator = new_wator(fileplanet)) == NULL)
+	{
+		exit(EXIT_FAILURE);
+	}
 
 	if(optionFlag[0] != 0)
 		wator->nwork = n_worker;
@@ -127,7 +132,12 @@ int main(int argc, char* argv[])
 		wator->chronon = n_chronon;
 
 	threadpool = (threadPool) malloc(sizeof(_threadPool));
-	initpool(threadpool, wator);
+	if(initpool(threadpool, wator) == -1)
+	{
+		perror("watorprocess - errore initpool");
+		/*da gestire*/
+	}
+
 	makeJoin(threadpool);
 	freePool(threadpool);
 
