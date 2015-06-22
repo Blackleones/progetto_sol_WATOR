@@ -245,7 +245,7 @@ void* workerTask(void* _wa)
 		effettuo la lock per non provocare una race condition su fopen
 		senza lock ottengo una segmentation fault per nwork molto elevato
 	*/
-	pthread_mutex_lock(&(tp->queueLock));
+
 	sprintf(snum, "%d", n);
 	strcpy(filename, WATOR_FILE);
 	strcat(filename, snum);
@@ -260,7 +260,6 @@ void* workerTask(void* _wa)
 	fclose(fd);
 	free(snum);
 	free(filename);
-	pthread_mutex_unlock(&(tp->queueLock));
 
 	while(tp->run)
 	{

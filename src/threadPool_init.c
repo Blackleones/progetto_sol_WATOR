@@ -223,7 +223,7 @@ int initpool(threadPool tp, wator_t* w)
 	}
 
 	/*inizializzo i worker*/
-	tp->workers = (pthread_t*) malloc(NWORK_DEF*sizeof(pthread_t));
+	tp->workers = (pthread_t*) malloc(tp->wator->nwork*sizeof(pthread_t));
 
 	if(tp->workers == NULL)
 	{
