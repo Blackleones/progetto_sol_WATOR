@@ -63,6 +63,12 @@ clean:
 	-rm -f w
 	
 #generazione eseguibili
+visualizer: visualizer.o
+	$(CC) -o $@ $^ $(LIBS) -lFinal -lpthread
+
+visualizer.o: visualizer.c
+	$(CC) $(CFLAG) -c $<
+
 wator: watorprocess.o
 	$(CC) -o $@ $^ $(LIBS) -lFinal -lpthread
 

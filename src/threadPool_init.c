@@ -119,6 +119,7 @@ static void set_check()
 
 static void set_close()
 {
+	printf("chiusura wator ..\n");
 	flag_close = 1;
 }
 
