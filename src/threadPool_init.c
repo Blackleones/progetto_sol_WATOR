@@ -15,6 +15,9 @@ KNmatrix initNKmatrix(planet_t* plan)
 	planet_nrow = plan->nrow;
 	planet_ncol = plan->ncol;
 
+	/*
+		la matrice KNmatrix è una rappresentazione in "scala" del pianeta
+	*/
 	KNnrow = planet_nrow / K + ((planet_nrow % K != 0) ? 1 : 0);
 	KNncol = planet_ncol / N + ((planet_ncol % N != 0) ? 1 : 0);
 

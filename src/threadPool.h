@@ -156,14 +156,21 @@ KNmatrix initKNmatrix(planet_t* plan);
 */
 void freePool(threadPool);
 
+/*
+	il thread signalTask controlla se sono stati settati i seguenti flag:
 
+	-flag_check: posso scrivere sul file wator.check
+	-flag_create: posso creare / aprire il file wator.check
+	-flag_close: devo chiudere gentilmente il programma
+*/
 void* signalTask(void*);
 /*
 	il thread worker verifica se è stato settato workFlag ed inizia la sua
 	elaborazione:
 		se la taskqueue è vuota si mette in attesa
 		se la taskqueue contiene un elemento, lo estrae, lo elabora e se
-		adesso la taskqueue è vuota setta collectorFlag e gli invia un segnale
+		adesso la taskqueue è vuota setta collectorFlag ed infine invia un segnale
+		al thread collector
 */
 void* workerTask(void*);
 
@@ -179,7 +186,9 @@ void* dispatcherTask(void*);
 	il thread collector verifica che la coda sia vuota, che workingThread == 0 
 	e che collectorTask sia == 1 
 		in tal caso setta work = 0, collectorFlag = 0 stampa il pianeta, aggiorna il chronon, 
-		sveglia il dispatcher e si rimette in attesa dei worker
+		sveglia il dispatcher e si rimette in attesa dei worker.
+		Dopo aver stampato controlla se il flag tp->close = 1, in tal caso mette tp->run = 0
+		uccidendo tutti i thread in vita (dispatcher, worker e collector stesso)
 */
 void* collectorTask(void*);
 

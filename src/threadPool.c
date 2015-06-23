@@ -234,9 +234,6 @@ void* workerTask(void* _wa)
 	myQueue taskqueue = tp->taskqueue;
 	int** flagMap = tp->flagMap;
 
-	/*
-		gestione del file
-	*/
 	FILE* fd = NULL;
 	char* filename = (char*) malloc(STRING_SIZE*sizeof(char));
 	char* snum = (char*) malloc(STRING_SIZE*sizeof(char));
@@ -285,7 +282,7 @@ void* workerTask(void* _wa)
 
 		/*
 			acquisisco la lock
-				-mi metto in attesase un thread sta elaborando una porzione vicino al mio task
+				-mi metto in attesa se un thread sta elaborando una porzione vicino al mio task
 			rilascio la lock
 			elaboro
 		*/
