@@ -59,6 +59,8 @@ build:
 clean:
 	-rm -f *.o
 	-rm -f wator_worker_*
+	-rm -f wator.check
+	-rm -f w
 	
 #generazione eseguibili
 wator: watorprocess.o

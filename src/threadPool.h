@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 #include "macro.h"
 #include "queue.h"
 #include "wator.h"
@@ -13,6 +14,8 @@
 
 #define STRING_SIZE 101
 #define WATOR_FILE "wator_worker_"
+#define WATOR_CHECK "wator.check"
+#define SECS 1
 
 #ifndef DEBUG_THREAD
 #define DEBUG_THREAD 0
@@ -62,6 +65,7 @@ struct __threadPool
 	/*
 		i thread
 	*/
+	pthread_t signal_handler;
 	pthread_t dispatcher;
 	pthread_t collector;
 	pthread_t* workers;
@@ -111,6 +115,10 @@ struct __threadPool
 		flag per avviare tutti i thread
 	*/
 	volatile int run;
+	/*
+		flag per la chiusura gentile
+	*/
+	volatile int close;
 };
 
 typedef struct __workerargs _workerargs;
@@ -148,6 +156,8 @@ KNmatrix initKNmatrix(planet_t* plan);
 */
 void freePool(threadPool);
 
+
+void* signalTask(void*);
 /*
 	il thread worker verifica se è stato settato workFlag ed inizia la sua
 	elaborazione:

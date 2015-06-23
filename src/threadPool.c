@@ -341,12 +341,7 @@ void* collectorTask(void* _tp)
 		if(DEBUG_THREAD)
 			printf("SIZE = %d\n", taskqueue->size);
 		
-		/*
-			isEmpty è commentato perche collectorFlag viene settato a 1 quando 
-			taskqueue->size = 0 => isEmpty ritorna sicuramente 1 perche viene chiamata sotto
-			lock
-		*/
-		while(tp->collectorFlag == 0 || tp->workingThread != 0/* || isEmpty(taskqueue)*/)
+		while(tp->collectorFlag == 0 || tp->workingThread != 0)
 			pthread_cond_wait(&(tp->waitingWorkers), &(tp->KNMLock));
 
 		tp->collectorFlag = 0;
@@ -362,6 +357,9 @@ void* collectorTask(void* _tp)
 		{
 			stampa(tp->wator->plan);
 			currentChronon = 0;
+
+			if(tp->close)
+				tp->run = 0;
 		}
 		else
 			currentChronon++;

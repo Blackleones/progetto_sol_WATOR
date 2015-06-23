@@ -141,5 +141,6 @@ int main(int argc, char* argv[])
 	makeJoin(threadpool);
 	freePool(threadpool);
 
+	printf("bye!\n");
 	exit(EXIT_SUCCESS);
 }
