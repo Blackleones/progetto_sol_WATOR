@@ -151,7 +151,10 @@ void* signalTask(void* _tp)
 		}
 
 		if(flag_close)
+		{
 			tp->close = 1;
+			break;
+		}
 	}
 
 	pthread_exit(0);
@@ -398,16 +401,17 @@ int makeJoin(threadPool tp)
 	checkError = pthread_join(tp->dispatcher, NULL);
 	checkError = pthread_join(tp->collector, NULL);
 	checkError = pthread_join(tp->signal_handler, NULL);
+
 	for(i = 0; i < tp->wator->nwork; i++)
 	{
 		checkError = pthread_join(tp->workers[i], NULL);
-		
+		printf("worker terminato %d\n", i);
 		if(checkError != 0)
 		{
 			error(checkError, "errore startPool - join i-esimo worker thread");
 			return -1;
 		}
 	}	
-
+	printf("i thread sono stati terminati\n");
 	return 1;
 }
