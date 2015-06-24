@@ -51,11 +51,13 @@ lib3: $(object3)
 	ar -qc $(LIBDIR)/$(LIBNAME4) *.o
 
 #comandi
+
 build:
+	-clear
 	make lib
 	make wator
 	make clean
-	
+
 clean:
 	-rm -f *.o
 	-rm -f wator_worker_*

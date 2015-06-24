@@ -22,7 +22,7 @@ KNmatrix initNKmatrix(planet_t* plan)
 	KNncol = planet_ncol / N + ((planet_ncol % N != 0) ? 1 : 0);
 
 	if(DEBUG_THREAD)
-		printf("KNmatrix: %d * %d\n", KNnrow, KNncol);
+		printf("%sKNmatrix ha dimensione: %d * %d%s\n", YELLOW, KNnrow, KNncol, NONE);
 
 	matrix = (status**) malloc(KNnrow*sizeof(status*));
 
@@ -163,7 +163,7 @@ int initpool(threadPool tp, wator_t* w)
 	int checkError = 0;
 
 	if(DEBUG_THREAD)
-		printf("entrato in threadPool - initPool\n");
+		printf("%sentrato in threadPool - initPool%s\n", YELLOW, NONE);
 
 	tp->wator = w;
 
@@ -320,6 +320,8 @@ int initpool(threadPool tp, wator_t* w)
 	struct sigaction sint;
 	struct sigaction term;
 	struct sigaction salarm;
+	struct sigaction pipe;
+
 	ec_meno1(sigfillset(&set));
 	ec_meno1(pthread_sigmask(SIG_SETMASK, &set, NULL));
 
@@ -327,16 +329,19 @@ int initpool(threadPool tp, wator_t* w)
 	bzero(&sint, sizeof(sint));
 	bzero(&term, sizeof(term));
 	bzero(&salarm, sizeof(salarm));
+	bzero(&pipe, sizeof(pipe));
 
 	usr1.sa_handler = set_alarm;
 	sint.sa_handler = set_close;
 	term.sa_handler = set_close;
 	salarm.sa_handler = set_check;
+	pipe.sa_handler = SIG_IGN;
 
 	ec_meno1(sigaction(SIGUSR1, &usr1, NULL));
 	ec_meno1(sigaction(SIGINT, &sint, NULL));
 	ec_meno1(sigaction(SIGTERM, &term, NULL));
 	ec_meno1(sigaction(SIGALRM, &salarm, NULL));
+	ec_meno1(sigaction(SIGPIPE, &pipe, NULL));
 
 	pthread_create(&(tp->signal_handler), NULL, signalTask, (void*)  &tp);
 
@@ -351,7 +356,7 @@ void freePool(threadPool tp)
 	int i = 0;
 
 	if(DEBUG_THREAD)
-		printf("entrato in threadPool - freePool\n");
+		printf("%sentrato in threadPool - freePool%s\n", YELLOW, NONE);
 
 	freeQueue(tp->taskqueue);
 	
@@ -395,12 +400,29 @@ int makeJoin(threadPool tp)
 	/*
 		faccio le join su tutti i thread <devo inserire il flag di chiusura>
 	*/
+
+	checkError = pthread_join(tp->signal_handler, NULL);
+
+	if(DEBUG_THREAD)
+		printf("%sSIGNAL_HANDLER terminato%s\n", YELLOW, NONE);
+
 	checkError = pthread_join(tp->dispatcher, NULL);
+
+	if(DEBUG_THREAD)
+		printf("%sDISPATCHER terminato%s\n", YELLOW, NONE);
+
 	checkError = pthread_join(tp->collector, NULL);
+	
+	if(DEBUG_THREAD)
+		printf("%sCOLLECTOR terminato%s\n", YELLOW, NONE);
+
 	checkError = pthread_join(tp->signal_handler, NULL);
 	for(i = 0; i < tp->wator->nwork; i++)
 	{
 		checkError = pthread_join(tp->workers[i], NULL);
+
+		if(DEBUG_THREAD)
+			printf("%sWORKER %d terminato%s\n", YELLOW, i, NONE);
 		
 		if(checkError != 0)
 		{

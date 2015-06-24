@@ -35,29 +35,29 @@ static void printFlagMap(int** flagMap, int nrow, int ncol, char* message)
 {
 	int i = 0, j = 0;
 
-	printf("\n|||||== %s: FLAGMAP ==|||||\n", message);
+	printf("%s\n|||||== %s: FLAGMAP ==|||||\n", message, YELLOW);
 
 	for(i = 0; i < nrow; i++)
 	{
 		for(j = 0; j < ncol; j++)
 			printf("%d ", flagMap[i][j]);
 
-		printf("\n");
+		printf("\n%s", NONE);
 	}	
 }
 
 static void printTask(task t)
 {
-	printf("\n=============================================\n");
+	printf("%s\n=============================================\n", YELLOW);
 	printf("=\t[%d][%d]:\n=\t\tV: %d -> %d\n=\t\tO: %d -> %d\n=", t->i, t->j, t->startY, t->stopY, t->startX, t->stopX);
-	printf("\n=============================================\n");
+	printf("\n=============================================\n%s", NONE);
 }
 
 static void printKNM(KNmatrix knm, char* message)
 {
 	int i = 0, j = 0;
 
-	printf("\n=======================%s======================\n", message);
+	printf("\n=======================%s======================\n%s", message, YELLOW);
 	printf("	KN MATRIX					\n");
 	for(i = 0; i < knm->nrow; i++){
 		for(j = 0; j < knm->ncol; j++)
@@ -65,7 +65,7 @@ static void printKNM(KNmatrix knm, char* message)
 
 		printf("\n");
 	}
-	printf("\n=============================================\n");
+	printf("\n=============================================\n%s", NONE);
 }
 
 /*
@@ -204,9 +204,6 @@ void* dispatcherTask(void* _tp)
 			printKNM(tp->KNM, "DISPATCHER:");
 		}
 
-		if(DEBUG_THREAD)
-			printf("---------DISPATCHER---------\n");
-
 		/*
 			acquisisco la lock ed inserisco i task da elaborare
 		*/
@@ -216,6 +213,9 @@ void* dispatcherTask(void* _tp)
 			pthread_cond_wait(&(tp->waitingCollector), &(tp->queueLock));
 
 		/*inserisco tutti i task*/
+		if(DEBUG_THREAD)
+			printf("%sDISPATCHER inserisce i task nella coda%s\n", YELLOW, NONE);
+
 		populateQueue(tp);
 
 		tp->workFlag = 1;
@@ -223,6 +223,10 @@ void* dispatcherTask(void* _tp)
 		pthread_mutex_unlock(&(tp->queueLock));
 	}
 
+	if(DEBUG_THREAD)
+		printf("%sDISPATCHER in chiusura%s\n", YELLOW, NONE);
+
+	pthread_cond_broadcast(&(tp->waitingDispatcher));
 	pthread_exit(EXIT_SUCCESS);
 }
 
@@ -250,7 +254,6 @@ void* workerTask(void* _wa)
 	if((fd = fopen(filename, "w")) == NULL)
 	{
 		perror("threadPool - worker, errore creazione file");
-		pthread_mutex_unlock(&(tp->queueLock));
 		pthread_exit((void*) -1);
 	}
 
@@ -260,10 +263,6 @@ void* workerTask(void* _wa)
 
 	while(tp->run)
 	{
-
-		if(DEBUG_THREAD)
-			printf("---------WORKER %d---------\n", n);
-
 		/*
 			acquisisco la lock
 				-se la coda è vuota estraggo un task
@@ -271,8 +270,21 @@ void* workerTask(void* _wa)
 		*/
 		pthread_mutex_lock(&(tp->queueLock));
 
-		while(tp->workFlag == 0 || !isEmpty(tp->taskqueue))
+		while((tp->workFlag == 0 || !isEmpty(tp->taskqueue)) && tp->run == 1)
 			pthread_cond_wait(&(tp->waitingDispatcher), &(tp->queueLock));
+
+		if(tp->run == 0)
+		{
+			if(DEBUG_THREAD)
+				printf("%sWORKER %d ha trovato tp->run == 0, si sta chiudendo\n%s", YELLOW, n, NONE);
+
+			pthread_cond_broadcast(&(tp->waitingDispatcher));
+			pthread_mutex_unlock(&(tp->queueLock));
+			break;
+		}
+
+		if(DEBUG_THREAD)
+			printf("%sWORKER %d esegue una pop\n%s", YELLOW, n, NONE);
 
 		task t = pop(taskqueue);
 
@@ -315,6 +327,7 @@ void* workerTask(void* _wa)
 		pthread_mutex_unlock(&(tp->KNMLock));
 	}
 
+	pthread_cond_broadcast(&(tp->waitingDispatcher));
 	pthread_exit(EXIT_SUCCESS);
 }
 
@@ -326,17 +339,13 @@ void* collectorTask(void* _tp)
 
 	while(tp->run)
 	{
-
-		if(DEBUG_THREAD)
-			printf("---------COLLECTOR---------\n");
-
 		pthread_mutex_lock(&(tp->KNMLock));
 
 		if(DEBUG_THREAD_TASK)
 			printKNM(tp->KNM, "COLLECTOR");
 
 		if(DEBUG_THREAD)
-			printf("SIZE = %d\n", taskqueue->size);
+			printf("%sCOLLECTOR elementi in coda = %d%s\n", YELLOW, taskqueue->size, NONE);
 		
 		while(tp->collectorFlag == 0 || tp->workingThread != 0)
 			pthread_cond_wait(&(tp->waitingWorkers), &(tp->KNMLock));
@@ -352,7 +361,8 @@ void* collectorTask(void* _tp)
 
 		if(currentChronon % tp->wator->chronon == 0)
 		{
-			stampa(tp->wator->plan);
+			//stampa(tp->wator->plan);
+			send_planet(tp->wator->plan);
 			currentChronon = 0;
 
 			if(tp->close)
@@ -369,4 +379,65 @@ void* collectorTask(void* _tp)
 	}
 
 	pthread_exit(EXIT_SUCCESS);
+}
+
+static void prepareBuffer(planet_t* plan, char* buffer, int row)
+{
+	int i = 0;
+
+	for(i = 0; i < plan->ncol; i++)
+		buffer[i] = cell_to_char(plan->w[row][i]);
+
+	buffer[i] = '\0';
+}
+
+void send_planet(planet_t* plan)
+{
+	if(DEBUG_THREAD)
+		printf("%sthreadPool - send_planet%s\n", YELLOW, NONE);
+
+	int i = 0;
+	char* buffer = (char*) malloc((plan->ncol+1)*sizeof(char));
+	char result[3] = {'0', '0', '\0'};
+
+	int fd_socket;
+	struct sockaddr_un socketAddress;
+
+	strncpy(socketAddress.sun_path, SOCK_NAME, UNIX_PATH_MAX);
+	socketAddress.sun_family = AF_UNIX;
+	fd_socket = socket(AF_UNIX, SOCK_STREAM, 0);
+
+	while(connect(fd_socket, (struct sockaddr*) &(socketAddress), sizeof(socketAddress)) == -1)
+	{
+		if(errno == ENOENT)
+			sleep(1); 
+		else
+		{
+			perror("threadPool - errore send_planet - connect");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	for(i = 2; i < plan->ncol; i++)
+	{
+		prepareBuffer(plan, buffer, i);
+
+		if(write(fd_socket, buffer, strlen(buffer)) == -1)
+		{
+			perror("errore threadPool - send_planet write");
+			exit(EXIT_FAILURE);
+		}
+
+		if(read(fd_socket, result, SOCKET_BUFFER_SIZE) == -1)
+		{
+			perror("errore threadPool - send_planet read");
+			exit(EXIT_FAILURE);
+		}
+
+		memset(buffer, 0, (plan->ncol*+1)*sizeof(char));
+	}
+
+	free(buffer);
+	fflush(NULL);
+	close(fd_socket);
 }

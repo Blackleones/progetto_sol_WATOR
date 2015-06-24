@@ -23,6 +23,7 @@
 #define RED   "\x1B[31m"
 #define GREEN "\x1B[32m"
 #define BLUE  "\x1B[34m"
+#define YELLOW  "\x1b[33m"
 #define NONE  "\033[0m"
 
 #endif

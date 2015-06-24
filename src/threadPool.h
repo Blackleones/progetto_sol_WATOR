@@ -274,4 +274,6 @@ void loadFlagMap(planet_t*, int**);
 */
 int evolve(task, wator_t*, int**);
 
+void send_planet(planet_t* plan);
+
 #endif
