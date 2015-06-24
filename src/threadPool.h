@@ -6,9 +6,13 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
 #include "macro.h"
 #include "queue.h"
 #include "wator.h"
+
 #define K 5
 #define N 5
 
@@ -16,6 +20,10 @@
 #define WATOR_FILE "wator_worker_"
 #define WATOR_CHECK "wator.check"
 #define SECS 1
+
+#define SOCK_NAME "./visual.sck"
+#define UNIX_PATH_MAX 108
+#define SOCKET_BUFFER_SIZE 201
 
 #ifndef DEBUG_THREAD
 #define DEBUG_THREAD 0

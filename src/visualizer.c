@@ -146,6 +146,9 @@ int main(int argc, char* argv[])
 	{
 		if((fd_client = accept(fd_socket, NULL, 0)) == -1)
 		{
+			if(errno == EINTR)
+				break;
+
 			perror("errore visualizer - accept");
 			exit(EXIT_FAILURE);
 		}
