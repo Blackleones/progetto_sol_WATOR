@@ -313,7 +313,7 @@ void* workerTask(void* _wa)
 
 		pthread_mutex_lock(&(tp->KNMLock));
 		tp->KNM->matrix[t->i][t->j] = DONE;		
-
+		free(t);
 		/*se la cosa è vuota sveglio il collector*/
 		if(checkMutexDone(tp->KNM) == 1){
 			tp->collectorFlag = 1;
@@ -362,7 +362,7 @@ void* collectorTask(void* _tp)
 			
 			if(DEBUG_THREAD)
 				stampa(tp->wator->plan);
-			
+
 			send_planet(tp->wator->plan);
 			currentChronon = 0;
 
@@ -419,7 +419,7 @@ void send_planet(planet_t* plan)
 		}
 	}
 
-	for(i = 2; i < plan->ncol; i++)
+	for(i = 2; i < plan->nrow; i++)
 	{
 		prepareBuffer(plan, buffer, i);
 

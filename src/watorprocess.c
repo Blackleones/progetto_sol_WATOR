@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <mcheck.h>
 #include "macro.h"
 #include "threadPool.h"
 #include "wator.h"
@@ -16,6 +17,7 @@
 */
 int main(int argc, char* argv[])
 {
+	mtrace();
 	/*
 		indice per il parser
 	*/
@@ -173,7 +175,7 @@ int main(int argc, char* argv[])
 		sprintf(scol, "%d", wator->plan->ncol);
 
 		execl("./visualizer", "visualizer", srow, scol, NULL);
-		printf("PORCO DIO \n");
+		exit(EXIT_FAILURE);
 	}
 
 	threadpool = (threadPool) malloc(sizeof(_threadPool));
@@ -189,5 +191,6 @@ int main(int argc, char* argv[])
 	kill(visualizer, SIGTERM);
 	waitpid(visualizer, NULL, 0);
 	printf("bye!\n");
+	muntrace();
 	exit(EXIT_SUCCESS);
 }
