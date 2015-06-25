@@ -16,8 +16,12 @@
 */
 /*stampa errori*/        
 #define error(errnoval, message) {errno = errnoval; perror(message);}
+
  #define ec_meno1(s) \
         if ( (s) == -1 ) { perror("errore gestione segnali"); exit(errno); }
+
+#define ec_not0(s, message) \
+        if( (s) != 0 ) { perror(message); exit(s);}
 
 /*colori console*/
 #define RED   "\x1B[31m"

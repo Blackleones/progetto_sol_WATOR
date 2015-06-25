@@ -207,10 +207,10 @@ void* dispatcherTask(void* _tp)
 		/*
 			acquisisco la lock ed inserisco i task da elaborare
 		*/
-		pthread_mutex_lock(&(tp->queueLock));
+		ec_not0(pthread_mutex_lock(&(tp->queueLock)), "dispatcher lock: errore queueLock");
 		
 		while(tp->workFlag != 0 || isEmpty(tp->taskqueue))
-			pthread_cond_wait(&(tp->waitingCollector), &(tp->queueLock));
+			ec_not0(pthread_cond_wait(&(tp->waitingCollector), &(tp->queueLock)), "dispatcher wait: errore waitingCollector");
 
 		/*inserisco tutti i task*/
 		if(DEBUG_THREAD)
@@ -219,14 +219,14 @@ void* dispatcherTask(void* _tp)
 		populateQueue(tp);
 
 		tp->workFlag = 1;
-		pthread_cond_broadcast(&(tp->waitingDispatcher));
-		pthread_mutex_unlock(&(tp->queueLock));
+		ec_not0(pthread_cond_broadcast(&(tp->waitingDispatcher)), "dispatcher broadcast: waitingDispatcher");
+		ec_not0(pthread_mutex_unlock(&(tp->queueLock)), "dispatcher unlock: errore queueLock");
 	}
 
 	if(DEBUG_THREAD)
 		printf("%sDISPATCHER in chiusura%s\n", YELLOW, NONE);
 
-	pthread_cond_broadcast(&(tp->waitingDispatcher));
+	ec_not0(pthread_cond_broadcast(&(tp->waitingDispatcher)), "dispatcher broadcast exit: errore waitingDispatcher");
 	pthread_exit(EXIT_SUCCESS);
 }
 
@@ -268,18 +268,18 @@ void* workerTask(void* _wa)
 				-se la coda è vuota estraggo un task
 			rilascio la lock
 		*/
-		pthread_mutex_lock(&(tp->queueLock));
+		ec_not0(pthread_mutex_lock(&(tp->queueLock)), "worker lock: errore queueLock");
 
 		while((tp->workFlag == 0 || !isEmpty(tp->taskqueue)) && tp->run == 1)
-			pthread_cond_wait(&(tp->waitingDispatcher), &(tp->queueLock));
+			ec_not0(pthread_cond_wait(&(tp->waitingDispatcher), &(tp->queueLock)), "worker wait: errore waitingDispatcher");
 
 		if(tp->run == 0)
 		{
 			if(DEBUG_THREAD)
 				printf("%sWORKER %d ha trovato tp->run == 0, si sta chiudendo\n%s", YELLOW, n, NONE);
 
-			pthread_cond_broadcast(&(tp->waitingDispatcher));
-			pthread_mutex_unlock(&(tp->queueLock));
+			ec_not0(pthread_cond_broadcast(&(tp->waitingDispatcher)), "worker broadcast: errore waitingDispatcher");
+			ec_not0(pthread_mutex_unlock(&(tp->queueLock)), "worker unlock: errore queueLock");
 			break;
 		}
 
@@ -290,7 +290,8 @@ void* workerTask(void* _wa)
 
 		if(DEBUG_THREAD_TASK)
 			printTask(t);
-		pthread_mutex_unlock(&(tp->queueLock));
+
+		ec_not0(pthread_mutex_unlock(&(tp->queueLock)), "worker unlock: errore queueLock");
 
 		/*
 			acquisisco la lock
@@ -298,34 +299,34 @@ void* workerTask(void* _wa)
 			rilascio la lock
 			elaboro
 		*/
-		pthread_mutex_lock(&(tp->KNMLock));
+		ec_not0(pthread_mutex_lock(&(tp->KNMLock)), "worker lock: errore KNMLock");
 
 		if(DEBUG_THREAD_MATRIX)
 			printKNM(tp->KNM, "WORKER:");
 
 		while(checkMutex(tp->KNM, t->i, t->j) == 0)
-			pthread_cond_wait(&(tp->waitingTask), &(tp->KNMLock));
+			ec_not0(pthread_cond_wait(&(tp->waitingTask), &(tp->KNMLock)), "worker wait: errore waitingTask");
 
 		tp->KNM->matrix[t->i][t->j] = RUNNING;
-		pthread_mutex_unlock(&(tp->KNMLock));
+		ec_not0(pthread_mutex_unlock(&(tp->KNMLock)), "worker unlock: errore KNMLock");
 
 		evolve(t, tp->wator, flagMap);
 
-		pthread_mutex_lock(&(tp->KNMLock));
+		ec_not0(pthread_mutex_lock(&(tp->KNMLock)), "worker lock: errore KNMLock");
 		tp->KNM->matrix[t->i][t->j] = DONE;		
 		free(t);
 		/*se la cosa è vuota sveglio il collector*/
 		if(checkMutexDone(tp->KNM) == 1){
 			tp->collectorFlag = 1;
-			pthread_cond_signal(&(tp->waitingWorkers));
+			ec_not0(pthread_cond_signal(&(tp->waitingWorkers)), "worker signal: errore waitingWorkers");
 		}
 
 		/*sveglio tutti i worker in attesa per elaborare il task*/
-		pthread_cond_broadcast(&(tp->waitingTask));
-		pthread_mutex_unlock(&(tp->KNMLock));
+		ec_not0(pthread_cond_broadcast(&(tp->waitingTask)), "worker broadcast: errore waitingTask");
+		ec_not0(pthread_mutex_unlock(&(tp->KNMLock)), "worker unlock: errore KNMLock");
 	}
 
-	pthread_cond_broadcast(&(tp->waitingDispatcher));
+	ec_not0(pthread_cond_broadcast(&(tp->waitingDispatcher)), "worker broadcast exit: errore waitingDispatcher");
 	pthread_exit(EXIT_SUCCESS);
 }
 
@@ -337,7 +338,7 @@ void* collectorTask(void* _tp)
 
 	while(tp->run)
 	{
-		pthread_mutex_lock(&(tp->KNMLock));
+		ec_not0(pthread_mutex_lock(&(tp->KNMLock)), "collector lock: errore KNMLock");
 
 		if(DEBUG_THREAD_TASK)
 			printKNM(tp->KNM, "COLLECTOR");
@@ -346,7 +347,7 @@ void* collectorTask(void* _tp)
 			printf("%sCOLLECTOR elementi in coda = %d%s\n", YELLOW, taskqueue->size, NONE);
 		
 		while(tp->collectorFlag == 0)
-			pthread_cond_wait(&(tp->waitingWorkers), &(tp->KNMLock));
+			ec_not0(pthread_cond_wait(&(tp->waitingWorkers), &(tp->KNMLock)), "collector wait: errore waitingWorkers");
 
 		tp->collectorFlag = 0;
 		tp->workFlag = 0;
@@ -375,8 +376,8 @@ void* collectorTask(void* _tp)
 		loadFlagMap(tp->wator->plan, tp->flagMap);
 		loadKNM(tp->KNM);
 
-		pthread_cond_signal(&(tp->waitingCollector));
-		pthread_mutex_unlock(&(tp->KNMLock));
+		ec_not0(pthread_cond_signal(&(tp->waitingCollector)), "collector signal: errore waitingCollector");
+		ec_not0(pthread_mutex_unlock(&(tp->KNMLock)), "collector unlock: errore KNMLock");
 	}
 
 	pthread_exit(EXIT_SUCCESS);

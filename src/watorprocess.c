@@ -5,7 +5,6 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <fcntl.h>
-#include <mcheck.h>
 #include "macro.h"
 #include "threadPool.h"
 #include "wator.h"
@@ -17,7 +16,6 @@
 */
 int main(int argc, char* argv[])
 {
-	mtrace();
 	/*
 		indice per il parser
 	*/
@@ -191,6 +189,5 @@ int main(int argc, char* argv[])
 	kill(visualizer, SIGTERM);
 	waitpid(visualizer, NULL, 0);
 	printf("bye!\n");
-	muntrace();
 	exit(EXIT_SUCCESS);
 }

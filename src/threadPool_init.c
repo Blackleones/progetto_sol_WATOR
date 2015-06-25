@@ -159,7 +159,6 @@ void* signalTask(void* _tp)
 int initpool(threadPool tp, wator_t* w)
 {
 	int i = 0;
-	int checkError = 0;
 
 	if(DEBUG_THREAD)
 		printf("%sentrato in threadPool - initPool%s\n", YELLOW, NONE);
@@ -218,74 +217,31 @@ int initpool(threadPool tp, wator_t* w)
 	/*
 		inizializzo mutex e cw
 	*/
-	checkError = pthread_mutex_init(&(tp->queueLock), NULL);
+	ec_not0(pthread_mutex_init(&(tp->queueLock), NULL), "errore initpool - inizializzazione lock");
 
-	if(checkError != 0)
-	{
-		error(checkError, "errore initpool - inizializzazione lock");
-		return -1;
-	}
+	ec_not0(pthread_mutex_init(&(tp->KNMLock), NULL), "errore initpool - inizializzazione lock");
 
-	checkError = pthread_mutex_init(&(tp->KNMLock), NULL);
+	ec_not0(pthread_cond_init(&(tp->waitingDispatcher), NULL), "errore initpool - inizializzazione cw waitingDispatcher");
 
-	if(checkError != 0)
-	{
-		error(checkError, "errore initpool - inizializzazione lock");
-		return -1;		
-	}
+	ec_not0(pthread_cond_init(&(tp->waitingWorkers), NULL), "errore initpool - inizializzazione cw waitingWorkers");
 
-	checkError = pthread_cond_init(&(tp->waitingDispatcher), NULL);
+	ec_not0(pthread_cond_init(&(tp->waitingCollector), NULL), "errore initpool - inizializzazione cw waitingCollector");
 
-	if(checkError != 0)
-	{
-		error(checkError, "errore initpool - inizializzazione cw waitingDispatcher");
-		return -1;
-	}
+	ec_not0(pthread_cond_init(&(tp->waitingTask), NULL), "errore initpool - inizializzazione cw waitingTask");
 
-	checkError = pthread_cond_init(&(tp->waitingWorkers), NULL);
-
-	if(checkError != 0)
-	{
-		error(checkError, "errore initpool - inizializzazione cw waitingWorkers");
-		return -1;
-	}
-
-	checkError = pthread_cond_init(&(tp->waitingCollector), NULL);
-
-	if(checkError != 0)
-	{
-		error(checkError, "errore initpool - inizializzazione cw waitingCollector");
-		return -1;
-	}
-
-	checkError = pthread_cond_init(&(tp->waitingTask), NULL);
-
-	if(checkError != 0)
-	{
-		error(checkError, "errore initpool - inizializzazione cw waitingTask");
-		return -1;
-	}
 	/*
 		inizializzo dispatcher
 	*/
-	checkError = pthread_create(&(tp->dispatcher), NULL, dispatcherTask, (void*) &tp);
+	ec_not0(pthread_create(&(tp->dispatcher), NULL, dispatcherTask, (void*) &tp), "errore initpool - creazione dispatcher");
 
-	if(checkError != 0)
-	{
-		error(EAGAIN, "errore initpool - creazione dispatcher");
-		return -1;
-	}
+	/*
+		inizializzo collector
+	*/
+	ec_not0(pthread_create(&(tp->collector), NULL, collectorTask, (void*) &tp), "errore initpool - creazione collector");
 
-	/*inizializzo collector*/
-	checkError = pthread_create(&(tp->collector), NULL, collectorTask, (void*) &tp);
-
-	if(checkError != 0)
-	{
-		error(EAGAIN, "errore initpool - creazione collector");
-		return -1;
-	}
-
-	/*inizializzo i worker*/
+	/*
+		inizializzo i worker
+	*/
 	tp->workers = (pthread_t*) malloc((tp->wator->nwork)*sizeof(pthread_t));
 
 	if(tp->workers == NULL)
@@ -300,14 +256,7 @@ int initpool(threadPool tp, wator_t* w)
 		wa->n = i;
 		wa->tp = tp;
 
-		checkError = pthread_create(&(tp->workers[i]), NULL, workerTask, (void*) wa);
-
-		if(checkError != 0)
-		{
-			error(checkError, "errore initpool - creazione i-esimo worker thread");
-			return -1;
-		}
-
+		ec_not0(pthread_create(&(tp->workers[i]), NULL, workerTask, (void*) wa), "errore initpool - creazione i-esimo worker thread");
 	}
 
 	/*
@@ -383,50 +332,42 @@ void freePool(threadPool tp)
 	/*
 		libero le mutex e cw
 	*/
-	pthread_mutex_destroy(&(tp->queueLock));
-	pthread_mutex_destroy(&(tp->KNMLock));
-	pthread_cond_destroy(&(tp->waitingCollector));
-	pthread_cond_destroy(&(tp->waitingDispatcher));
-	pthread_cond_destroy(&(tp->waitingWorkers));
-	pthread_cond_destroy(&(tp->waitingTask));
+	ec_not0(pthread_mutex_destroy(&(tp->queueLock)), "freePool destroy: errore queueLock");
+	ec_not0(pthread_mutex_destroy(&(tp->KNMLock)), "freePool destroy: errore KNMLock");
+	ec_not0(pthread_cond_destroy(&(tp->waitingCollector)), "freePool destroy: errore waitingCollector");
+	ec_not0(pthread_cond_destroy(&(tp->waitingDispatcher)), "freePool destroy: errore waitingDispatcher");
+	ec_not0(pthread_cond_destroy(&(tp->waitingWorkers)), "freePool destroy: errore waitingWorkers");
+	ec_not0(pthread_cond_destroy(&(tp->waitingTask)), "freePool destroy: errore waitingTask");
 }
 
 int makeJoin(threadPool tp)
 {
 	int i = 0;
-	int checkError = 0;
 	/*
 		faccio le join su tutti i thread <devo inserire il flag di chiusura>
 	*/
 
-	checkError = pthread_join(tp->signal_handler, NULL);
+	ec_not0(pthread_join(tp->signal_handler, NULL), "makeJoin join: errore signal_handler");
 
 	if(DEBUG_THREAD)
 		printf("%sSIGNAL_HANDLER terminato%s\n", YELLOW, NONE);
 
-	checkError = pthread_join(tp->dispatcher, NULL);
+	ec_not0(pthread_join(tp->dispatcher, NULL), "makeJoin join: errore dispatcher");
 
 	if(DEBUG_THREAD)
 		printf("%sDISPATCHER terminato%s\n", YELLOW, NONE);
 
-	checkError = pthread_join(tp->collector, NULL);
+	ec_not0(pthread_join(tp->collector, NULL), "makeJoin join: errore collector");
 	
 	if(DEBUG_THREAD)
 		printf("%sCOLLECTOR terminato%s\n", YELLOW, NONE);
 
-	checkError = pthread_join(tp->signal_handler, NULL);
 	for(i = 0; i < tp->wator->nwork; i++)
 	{
-		checkError = pthread_join(tp->workers[i], NULL);
+		ec_not0(pthread_join(tp->workers[i], NULL), "makeJoin join: errore workers");
 
 		if(DEBUG_THREAD)
 			printf("%sWORKER %d terminato%s\n", YELLOW, i, NONE);
-		
-		if(checkError != 0)
-		{
-			error(checkError, "errore startPool - join i-esimo worker thread");
-			return -1;
-		}
 	}	
 
 	return 1;
