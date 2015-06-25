@@ -108,10 +108,6 @@ struct __threadPool
 	*/
 	pthread_cond_t waitingTask;
 	/*
-		# worker che stanno effettuando una elaborazione
-	*/
-	volatile int workingThread;
-	/*
 		flag per avviare il collector
 	*/
 	volatile int collectorFlag;

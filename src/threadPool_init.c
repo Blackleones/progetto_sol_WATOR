@@ -211,7 +211,6 @@ int initpool(threadPool tp, wator_t* w)
 	tp->run = 1;
 	tp->workFlag = 0;
 	tp->collectorFlag = 0;
-	tp->workingThread = 0;
 	tp->close = 0;
 
 	loadFlagMap(tp->wator->plan, tp->flagMap);

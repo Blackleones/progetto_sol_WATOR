@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
 
 	if(optionFlag[1] != 0)
 		wator->chronon = n_chronon;
-
+	
 	threadpool = (threadPool) malloc(sizeof(_threadPool));
 	if(initpool(threadpool, wator) == -1)
 	{

@@ -299,7 +299,6 @@ void* workerTask(void* _wa)
 			elaboro
 		*/
 		pthread_mutex_lock(&(tp->KNMLock));
-		(tp->workingThread)++;
 
 		if(DEBUG_THREAD_MATRIX)
 			printKNM(tp->KNM, "WORKER:");
@@ -314,7 +313,6 @@ void* workerTask(void* _wa)
 
 		pthread_mutex_lock(&(tp->KNMLock));
 		tp->KNM->matrix[t->i][t->j] = DONE;		
-		(tp->workingThread)--;
 
 		/*se la cosa è vuota sveglio il collector*/
 		if(checkMutexDone(tp->KNM) == 1){
@@ -347,7 +345,7 @@ void* collectorTask(void* _tp)
 		if(DEBUG_THREAD)
 			printf("%sCOLLECTOR elementi in coda = %d%s\n", YELLOW, taskqueue->size, NONE);
 		
-		while(tp->collectorFlag == 0 || tp->workingThread != 0)
+		while(tp->collectorFlag == 0)
 			pthread_cond_wait(&(tp->waitingWorkers), &(tp->KNMLock));
 
 		tp->collectorFlag = 0;
