@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 #include "macro.h"
 #include "threadPool.h"
 #include "wator.h"
@@ -30,6 +33,7 @@ int main(int argc, char* argv[])
 		filedump: file su cui deve stampare il visualizer
 		fileplanet: pianeta da elaborare
 	*/
+	int fd_filedump = -1;
 	char* filedump = NULL;
 	char* fileplanet = NULL;
 	/*
@@ -37,6 +41,10 @@ int main(int argc, char* argv[])
 	*/
 	wator_t* wator = NULL;
 	threadPool threadpool = NULL;
+	/*
+		pid visualizer
+	*/
+	pid_t visualizer;
 
 	/*
 		parser degli argomenti
@@ -131,6 +139,43 @@ int main(int argc, char* argv[])
 	if(optionFlag[1] != 0)
 		wator->chronon = n_chronon;
 	
+	/*
+		avvio visualizer
+	*/
+	if((visualizer = fork()) == -1)
+	{
+		perror("watorprocess - errore fork");
+		exit(EXIT_FAILURE);
+	}
+	else if(visualizer == 0)
+	{
+		if(filedump != NULL)
+		{
+			if((fd_filedump = open(filedump, O_CREAT | O_WRONLY | O_TRUNC, 0666)) == -1)
+			{
+				perror("watorprocess - errore apertura filedump");
+				exit(EXIT_FAILURE);
+			}
+
+			if(dup2(fd_filedump, 1) == -1)
+			{
+				perror("watorprocess - errore dup2");
+				exit(EXIT_FAILURE);
+			}
+
+			close(fd_filedump);
+		}
+
+		char* srow = (char*) malloc(STRING_SIZE*sizeof(char));
+		char* scol = (char*) malloc(STRING_SIZE*sizeof(char));
+
+		sprintf(srow, "%d", wator->plan->nrow);
+		sprintf(scol, "%d", wator->plan->ncol);
+
+		execl("./visualizer", "visualizer", srow, scol, NULL);
+		printf("PORCO DIO \n");
+	}
+
 	threadpool = (threadPool) malloc(sizeof(_threadPool));
 	if(initpool(threadpool, wator) == -1)
 	{
@@ -141,6 +186,8 @@ int main(int argc, char* argv[])
 	makeJoin(threadpool);
 	freePool(threadpool);
 
+	kill(visualizer, SIGTERM);
+	waitpid(visualizer, NULL, 0);
 	printf("bye!\n");
 	exit(EXIT_SUCCESS);
 }

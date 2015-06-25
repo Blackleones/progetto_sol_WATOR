@@ -18,7 +18,6 @@ volatile int run = 1;
 
 static void close_program()
 {
-	printf("chiusura visualizer...\n");
 	run = 0;
 }
 
@@ -37,7 +36,7 @@ void signal_handler()
 	bzero(&term, sizeof(term));
 
 	pipe.sa_handler = SIG_IGN;
-	sint.sa_handler = close_program;
+	sint.sa_handler = SIG_IGN;
 	term.sa_handler = close_program;
 
 	ec_meno1(sigaction(SIGPIPE, &pipe, NULL));
@@ -62,6 +61,7 @@ void check_socket()
 		}
 	}	
 }
+
 static void stampa(char* map, int ncol)
 {
 	int i = 0;
@@ -73,24 +73,24 @@ static void stampa(char* map, int ncol)
 		if(i != 0 && i != ncol)
 		{
 			if(map[i] == 'W')
-				printf(" %s%c%s", BLUE, map[i], NONE);
+				printf(" %c", map[i]);
 
 			if(map[i] == 'S')
-				printf(" %s%c%s", RED, map[i], NONE);
+				printf(" %c", map[i]);
 
 			if(map[i] == 'F')
-				printf(" %s%c%s", GREEN, map[i], NONE);
+				printf(" %c", map[i]);
 		}
 		else
 		{
 			if(map[i] == 'W')
-				printf("%s%c%s", BLUE, map[i], NONE);
+				printf("%c", map[i]);
 
 			if(map[i] == 'S')
-				printf("%s%c%s", RED, map[i], NONE);
+				printf("%c", map[i]);
 
 			if(map[i] == 'F')
-				printf("%s%c%s", GREEN, map[i], NONE);	
+				printf("%c", map[i]);	
 		}
 	}
 	
@@ -168,6 +168,7 @@ int main(int argc, char* argv[])
 		}
 
 		printf("\n");
+		rewind(stdout);
 		close(fd_client);
 	}
 

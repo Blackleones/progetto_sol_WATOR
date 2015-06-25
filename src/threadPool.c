@@ -359,7 +359,10 @@ void* collectorTask(void* _tp)
 
 		if(currentChronon % tp->wator->chronon == 0)
 		{
-			//stampa(tp->wator->plan);
+			
+			if(DEBUG_THREAD)
+				stampa(tp->wator->plan);
+			
 			send_planet(tp->wator->plan);
 			currentChronon = 0;
 

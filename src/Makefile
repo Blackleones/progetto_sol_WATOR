@@ -56,6 +56,7 @@ build:
 	-clear
 	make lib
 	make wator
+	make visualizer
 	make clean
 
 clean:
