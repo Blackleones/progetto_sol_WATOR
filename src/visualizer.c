@@ -1,3 +1,10 @@
+/*
+	\file wator_util.c
+	\author Leonardo Lurci
+	Si dichiara che il contenuto di questo file è in ogni sua parte opera originale dell'autore.
+	(verificabile tramite git log dell'autore).
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
