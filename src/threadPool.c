@@ -326,6 +326,7 @@ void* workerTask(void* _wa)
 		ec_not0(pthread_mutex_unlock(&(tp->KNMLock)), "worker unlock: errore KNMLock");
 	}
 
+	free(wa);
 	ec_not0(pthread_cond_broadcast(&(tp->waitingDispatcher)), "worker broadcast exit: errore waitingDispatcher");
 	pthread_exit(EXIT_SUCCESS);
 }

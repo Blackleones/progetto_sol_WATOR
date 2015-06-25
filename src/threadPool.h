@@ -147,7 +147,7 @@ int initpool(threadPool, wator_t*);
 /*
 	\param threadPool, la struttura dati principale che stiamo inizializzando
 
-	inizializza la matrice KNmatrix di supporto
+	inizializza la matrice KNmatrix di supporto dei task
 	
 	\retval status** la KNmatrix
 	\retval NULL se c'e' stato un errore, setta errno
@@ -172,9 +172,16 @@ void* signalTask(void*);
 	il thread worker verifica se è stato settato workFlag ed inizia la sua
 	elaborazione:
 		se la taskqueue è vuota si mette in attesa
-		se la taskqueue contiene un elemento, lo estrae, lo elabora e se
-		adesso la taskqueue è vuota setta collectorFlag ed infine invia un segnale
-		al thread collector
+		se la taskqueue contiene un elemento:
+			-acquisisce la lock
+			-lo estrae
+			-rilascia la lock sulla coda
+			-acquisisce la lock sulla matrice di supporto dei task e se nessun quadrante
+				è in elaborazione => esegue la elaborazione, altrimenti rimane in attesa
+			-rilascia la lock
+
+			se la matrice di supporto ai task è completamente elaborata ( == 1) allora
+			mando un segnale al thread collector
 */
 void* workerTask(void*);
 
@@ -187,10 +194,15 @@ void* workerTask(void*);
 void* dispatcherTask(void*);
 
 /*
-	il thread collector verifica che la coda sia vuota, che workingThread == 0 
-	e che collectorTask sia == 1 
-		in tal caso setta work = 0, collectorFlag = 0 stampa il pianeta, aggiorna il chronon, 
-		sveglia il dispatcher e si rimette in attesa dei worker.
+	il thread collector verifica che collectorTask sia == 1 
+		in tal caso 
+			setta work = 0, 
+			collectorFlag = 0 
+			stampa il pianeta se il chronon è quello richiesto,
+			aggiorna il chronon,
+			sveglia il dispatcher
+			e si rimette in attesa dei worker.
+
 		Dopo aver stampato controlla se il flag tp->close = 1, in tal caso mette tp->run = 0
 		uccidendo tutti i thread in vita (dispatcher, worker e collector stesso)
 */
@@ -206,7 +218,8 @@ int makeJoin(threadPool);
 /*
 	\param threadPool, la struttura dati principale
 
-	questa funzione calcola le coordinate della sottomatrice relativa al task che stiamo creando.
+	questa funzione calcola le K*N sottomatrici, crea i relativi task per l'elaborazione e l'
+	inserisce nella coda
 */
 void populateQueue(threadPool);
 
@@ -263,13 +276,20 @@ void loadFlagMap(planet_t*, int**);
 		startX, stopX
 		startY, stopY
 
-	e verificando se l'animale di posizione [x][y] puo' essere spostato o 
+	verificando se l'animale di posizione [x][y] puo' essere spostato o meno 
+	tramite la matrice di supporto flagMap
 
 	\retval 1 se l'evoluzione è riuscita con successo
 	\retval -1 altrimenti
 */
 int evolve(task, wator_t*, int**);
 
+/*
+	la funzione esegue una connessione con la socket e inizia a inviare il
+	pianeta da stampare.
+
+	il pianeta viene passato 1 riga per volta, eliminando i <blank>	
+*/
 void send_planet(planet_t* plan);
 
 #endif

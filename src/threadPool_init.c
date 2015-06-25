@@ -145,7 +145,7 @@ void* signalTask(void* _tp)
 		{
 			flag_check = 0;
 
-			fseek(filecheck, 0, SEEK_SET);
+			rewind(filecheck);
 			print_planet(filecheck, tp->wator->plan);
 		}
 

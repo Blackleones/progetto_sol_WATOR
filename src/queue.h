@@ -45,7 +45,7 @@ struct __myQueue
 /*
 	\param myQueue, la coda da inizializzare
 
-	la funzione mette a 0 il puntatore alla testa e setta size = 0
+	la funzione mette a NULL il puntatore alla testa e setta size = 0
 */
 void initMyQueue(myQueue);
 
@@ -86,7 +86,11 @@ void freeQueue(myQueue);
 
 /*
 	\param task, il task da inizializzare
-	\param startX, startY, stopX, stopY, i valori a cui inizializzare il task
+
+	inizializza il task inserendo gli indici della matrice i, j di KNmatrix e
+	gli indici che deve elaborare 
+
+	\param i, j, startX, startY, stopX, stopY, i valori a cui inizializzare il task
 */
 void populateTask(task, int, int, int, int, int, int);
 

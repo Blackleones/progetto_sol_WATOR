@@ -112,7 +112,6 @@ int main(int argc, char* argv[])
 		/*
 			controllo che il file esista e possa essere letto
 		*/
-
 		if(access(fileplanet, F_OK | R_OK) == -1)
 		{
 			perror("watorprocess - il pianeta non esiste o non puo' essere letto");
@@ -177,10 +176,12 @@ int main(int argc, char* argv[])
 	}
 
 	threadpool = (threadPool) malloc(sizeof(_threadPool));
+	
 	if(initpool(threadpool, wator) == -1)
 	{
 		perror("watorprocess - errore initpool");
-		/*da gestire*/
+		free_wator(wator);
+		exit(EXIT_FAILURE);
 	}
 
 	makeJoin(threadpool);
