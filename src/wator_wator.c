@@ -88,7 +88,6 @@ wator_t* new_wator (char* fileplan)
 	wator_t* wator = (wator_t*) malloc(sizeof(wator_t));
 	planet_t* planet = NULL;
 	FILE* inputPlanet = NULL;
-	srand(time(NULL));
 
 	if(wator == NULL)
 		return NULL;
