@@ -12,13 +12,14 @@
 */
 static void stampa(planet_t* planet)
 {
-	usleep(100000);
-	system("clear");
-	printf("\n");
 	int i = 0, j = 0; 
 	int nrow = planet->nrow;
 	int ncol = planet->ncol;
 	cell_t** map = planet->w;
+
+	usleep(100000);
+	system("clear");
+	printf("\n");
 
 	for(i = 0; i < nrow; i++)
 	{
@@ -89,6 +90,7 @@ void populateQueue(threadPool tp)
 	int nrow = tp->wator->plan->nrow;
 	int ncol = tp->wator->plan->ncol;
 
+	task t = NULL;
 
 	while(i < KNrow)
 	{
@@ -99,7 +101,7 @@ void populateQueue(threadPool tp)
 		{
 			ccf = ((ccf + N - 1 < ncol) ? ccf + N - 1 : ncol-1);
 			
-			task t = (task) malloc(sizeof(_task));
+			t = (task) malloc(sizeof(_task));
 			populateTask(t, i, j, cri, cci, crf, ccf);
 			push(tp->taskqueue, t);
 
@@ -244,7 +246,7 @@ void* workerTask(void* _wa)
 	threadPool tp = wa->tp;
 	myQueue taskqueue = tp->taskqueue;
 	int** flagMap = tp->flagMap;
-
+	task t = NULL;
 	FILE* fd = NULL;
 	char* filename = (char*) malloc(STRING_SIZE*sizeof(char));
 	char* snum = (char*) malloc(STRING_SIZE*sizeof(char));
@@ -293,7 +295,7 @@ void* workerTask(void* _wa)
 		if(DEBUG_THREAD)
 			printf("%sWORKER %d esegue una pop\n%s", YELLOW, n, NONE);
 
-		task t = pop(taskqueue);
+		t = pop(taskqueue);
 
 		if(DEBUG_THREAD_TASK)
 			printTask(t);
@@ -403,15 +405,15 @@ static void prepareBuffer(planet_t* plan, char* buffer, int row)
 
 void send_planet(planet_t* plan)
 {
-	if(DEBUG_THREAD)
-		printf("%sthreadPool - send_planet%s\n", YELLOW, NONE);
-
 	int i = 0;
 	char* buffer = (char*) malloc((plan->ncol+1)*sizeof(char));
 	char result[3] = {'0', '0', '\0'};
 
 	int fd_socket;
 	struct sockaddr_un socketAddress;
+
+	if(DEBUG_THREAD)
+		printf("%sthreadPool - send_planet%s\n", YELLOW, NONE);
 
 	strncpy(socketAddress.sun_path, SOCK_NAME, UNIX_PATH_MAX);
 	socketAddress.sun_family = AF_UNIX;

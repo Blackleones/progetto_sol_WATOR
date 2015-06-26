@@ -166,7 +166,13 @@ void* signalTask(void* _tp)
 int initpool(threadPool tp, wator_t* w)
 {
 	int i = 0;
-
+	sigset_t set;
+	struct sigaction usr1;
+	struct sigaction sint;
+	struct sigaction term;
+	struct sigaction salarm;
+	struct sigaction pipe;
+	
 	if(DEBUG_THREAD)
 		printf("%sentrato in threadPool - initPool%s\n", YELLOW, NONE);
 
@@ -269,12 +275,7 @@ int initpool(threadPool tp, wator_t* w)
 	/*
 		inizializzo gestore dei segnali
 	*/
-	sigset_t set;
-	struct sigaction usr1;
-	struct sigaction sint;
-	struct sigaction term;
-	struct sigaction salarm;
-	struct sigaction pipe;
+
 
 	ec_meno1(sigfillset(&set));
 	ec_meno1(pthread_sigmask(SIG_SETMASK, &set, NULL));
