@@ -105,12 +105,19 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	/*
+		verifico se sono stati inseriti argomenti doppioni
+	*/
 	if(optionFlag[0] > 1 || optionFlag[1] > 1 || optionFlag[2] > 1)
 	{
 		error(EINVAL, "watorprocess - alcuni argomenti sono ripetuti");
 		exit(EXIT_FAILURE);
 	}
 
+	/*
+		c'è ancora un argomento non parsato (no -lettera --lettera) quindi deve 
+		essere il pianeta da elaborare, altrimenti ritorno errore.
+	*/
 	if((argc - optind) == 1)
 	{
 		/*apro il file*/
@@ -178,6 +185,9 @@ int main(int argc, char* argv[])
 		sprintf(srow, "%d", wator->plan->nrow);
 		sprintf(scol, "%d", wator->plan->ncol);
 
+		/*
+			se la execl fallisce chiudo il processo wator
+		*/
 		execl("./visualizer", "visualizer", srow, scol, NULL);
 		exit(EXIT_FAILURE);
 	}

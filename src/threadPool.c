@@ -295,11 +295,6 @@ void* workerTask(void* _wa)
 	char* filename = (char*) malloc(STRING_SIZE*sizeof(char));
 	char* snum = (char*) malloc(STRING_SIZE*sizeof(char));
 
-	/*
-		effettuo la lock per non provocare una race condition su fopen
-		senza lock ottengo una segmentation fault per nwork molto elevato
-	*/
-
 	sprintf(snum, "%d", n);
 	strcpy(filename, WATOR_FILE);
 	strcat(filename, snum);
@@ -483,6 +478,9 @@ void send_planet(planet_t* plan)
 			exit(EXIT_FAILURE);
 		}
 
+		/*
+			pulisco il buffer
+		*/
 		memset(buffer, 0, (plan->ncol*+1)*sizeof(char));
 	}
 
