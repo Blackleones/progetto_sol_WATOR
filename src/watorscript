@@ -30,7 +30,7 @@ function printHelp {
 #successivamente, tramite getopt andiamo a scorrere i parametri e settiamo i relativi
 #flag (shark/fish) richiesti dall'utente. Se alla fine del parser non abbiamo alcun
 #opzione non parsata (quindi nessuna opzione -lettera --lettera) stampiamo help
-#se abbiamo letto piu' 1 opzione stampiamo help (possiamo lettere: -s -f o direttamente un nome)
+#se abbiamo letto piu' 1 opzione stampiamo help (possiamo leggere: -s -f o direttamente un nome)
 #nota:	$* = " $1 $2 $3 .. $n"
 #		$@ = "$1" "$2" "$3" .. "$n"
 function checkParam() {

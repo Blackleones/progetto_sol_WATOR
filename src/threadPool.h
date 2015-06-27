@@ -144,7 +144,8 @@ struct __workerargs
 /*
 	\param threadPool, la struttura dati principale da inizializzare
 
-	initpool inizializza tutti i campi della struttura dati
+	initpool inizializza tutti i campi della struttura dati e crea le maschere per catturare 
+	i segnali.
 
 	\retval 1 se l'inizializzazione della struttura dati è andata a buon fine
 	\retval -1 se c'e' stato un errore, setta errno
@@ -154,7 +155,8 @@ int initpool(threadPool, wator_t*);
 /*
 	\param threadPool, la struttura dati principale che stiamo inizializzando
 
-	inizializza la matrice KNmatrix di supporto dei task
+	inizializza la matrice KNmatrix di supporto dei task. Tutti i quadranti
+	vengono settati a WAITING
 	
 	\retval status** la KNmatrix
 	\retval NULL se c'e' stato un errore, setta errno
@@ -163,7 +165,8 @@ KNmatrix initKNmatrix(planet_t* plan);
 /*
 	\param threadPool, la struttura dati principale da liberare
 
-	libera gli elementi allocati della struttura dati
+	libera gli elementi allocati della struttura dati principale e richiama
+	le free delle librerie d'appoggio.
 */
 void freePool(threadPool);
 
@@ -176,27 +179,39 @@ void freePool(threadPool);
 */
 void* signalTask(void*);
 /*
+	\param workerargs: struttura dati che contiene il wid del thread e la struttura principale
+		threadPool per poter eseguire la simulazione.
 	il thread worker verifica se è stato settato workFlag ed inizia la sua
 	elaborazione:
 		se la taskqueue è vuota si mette in attesa
 		se la taskqueue contiene un elemento:
-			-acquisisce la lock
+			-acquisisce la lock sulla coda
 			-lo estrae
 			-rilascia la lock sulla coda
 			-acquisisce la lock sulla matrice di supporto dei task e se nessun quadrante
-				è in elaborazione => esegue la elaborazione, altrimenti rimane in attesa
+				è in elaborazione => setta a RUNNING il quadrante in elaborazione, 
+				rilascia la lock sulla matrice di supporto, esegue la elaborazione, 
+				altrimenti rimane in attesa.
+			-una volta terminata la elaborazione, acquisisce la lock sulla matrice di supporto,
+			 setta  DONE il quadrante elaborato.
 			-rilascia la lock
 
-			se la matrice di supporto ai task è completamente elaborata ( == 1) allora
+			se la matrice di supporto ai task è completamente elaborata (== DONE) allora
 			mando un segnale al thread collector
+
+	prima di terminare invia un segnale broadcast a tutti i thread worker in attesa per poterli terminare
 */
 void* workerTask(void*);
 
 /*
+	\param threadPool: struttura dati principale per poter eseguire la simulazione.
+
 	il thread dispatcher verifica che la coda sia vuota,
 		se lo è inizia a preparare i task, l'inserisce nella coda,
 		setta workFlag = 1, sveglia i worker (broadcast) e si mette
 		in attesa del collector
+
+	alla chiusura invia un segnale broadcast a tutti i thread worker per poterli terminare
 */
 void* dispatcherTask(void*);
 
@@ -210,8 +225,8 @@ void* dispatcherTask(void*);
 			sveglia il dispatcher
 			e si rimette in attesa dei worker.
 
-		Dopo aver stampato controlla se il flag tp->close = 1, in tal caso mette tp->run = 0
-		uccidendo tutti i thread in vita (dispatcher, worker e collector stesso)
+	nota:	Dopo aver stampato controlla se il flag tp->close = 1, in tal caso mette tp->run = 0
+			uccidendo tutti i thread in vita (dispatcher, worker e collector stesso)
 */
 void* collectorTask(void*);
 
@@ -219,6 +234,8 @@ void* collectorTask(void*);
 	\param threadPool, struttura dati principale
 
 	questa funzione crea le Join con tutti i thread della struttura dati principale
+
+	\retval 1 se non ci sono stati errori.
 */
 int makeJoin(threadPool);
 
@@ -292,6 +309,8 @@ void loadFlagMap(planet_t*, int**);
 int evolve(task, wator_t*, int**);
 
 /*
+	\param planet_t* plan: il pianeta da stampare
+	
 	la funzione esegue una connessione con la socket e inizia a inviare il
 	pianeta da stampare.
 
