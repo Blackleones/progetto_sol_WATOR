@@ -79,9 +79,48 @@ static void printKNM(KNmatrix knm, char* message)
 /*
 	FUNZIONI DI LIBRERIA
 */
+
+/*
+	populateQueue ha il compito di costruire offset di ogni quadrante di KNM->matrix
+
+	KNM-> matrix è una riduzione a scala del pianeta. Ogni quadrante di KNM->matrix ha
+	dimensione massima K*N.
+
+	esempio K = N = 2
+
+	pianeta:		KNM->matrix
+
+		0 1 2 3			0 1  
+	0   W W F F		0	A B
+	1   F F W W 	1   C D
+	2   S S S S
+
+	il quadrante A è la sottomatrice dimensione 2*2 relativa alla porzione 
+		riga: 0 -> 1 colonna 0 -> 1
+	il quadrante B è la sottomatrice dimensione 2*2 relativa alla porzione
+		riga 0 -> 1 colonna 2 -> 3
+	il quadrante C è la sottomatrice dimensione 1*2 relativa alla porzione
+		riga 2 -> 2 colonna 0 -> 1
+	il quadrante D è la sottomatrice dimensione 1*2 relativa alla porzione
+		riga 2 -> 2 colonna 2 -> 3	
+
+	l'algoritmo scorre colonna (quadrante) della matrice KNM->matrix e per ognuno di
+	esso controlla se è possibile spostarsi di N passi sulle colonne di planet, se 
+	non è possibile allora assegna la differenza tra N e planet->ncol.
+	Ogni volta che scendiamo di una riga si controlla se è possibile spostarsi di K 
+	passi sulle righe di planet, se non è possibile allora assegna la differenza tra 
+	K e planet->nrow
+
+*/
 void populateQueue(threadPool tp)
 {
 	int i = 0, j = 0;
+	/*
+		cri: inizio riga corrente
+		crf: fine riga corrente
+		cci: inizio colonna corrente
+		ccf: fine colonna corrente
+	*/
 	int cri = 0, crf = 0;
 	int cci = 0, ccf = 0;
 
@@ -94,11 +133,16 @@ void populateQueue(threadPool tp)
 
 	while(i < KNrow)
 	{
+		/*
+			controllo se mi posso spostare di K passi sulle righe
+		*/
 		crf = ((cri + K - 1 < nrow) ? cri + K - 1 : nrow -1);
 		cci = 0;
 		ccf = 0;
 		while(j < KNcol)
-		{
+		{	/*
+				controllo se mi posso spostare di N passi sulle colonne
+			*/
 			ccf = ((ccf + N - 1 < ncol) ? ccf + N - 1 : ncol-1);
 			
 			t = (task) malloc(sizeof(_task));
@@ -272,11 +316,6 @@ void* workerTask(void* _wa)
 
 	while(tp->run)
 	{
-		/*
-			acquisisco la lock
-				-se la coda è vuota estraggo un task
-			rilascio la lock
-		*/
 		ec_not0(pthread_mutex_lock(&(tp->queueLock)), "worker lock: errore queueLock");
 
 		while((tp->workFlag == 0 || !isEmpty(tp->taskqueue)) && tp->run == 1)
@@ -302,12 +341,6 @@ void* workerTask(void* _wa)
 
 		ec_not0(pthread_mutex_unlock(&(tp->queueLock)), "worker unlock: errore queueLock");
 
-		/*
-			acquisisco la lock
-				-mi metto in attesa se un thread sta elaborando una porzione vicino al mio task
-			rilascio la lock
-			elaboro
-		*/
 		ec_not0(pthread_mutex_lock(&(tp->KNMLock)), "worker lock: errore KNMLock");
 
 		if(DEBUG_THREAD_MATRIX)
@@ -324,13 +357,17 @@ void* workerTask(void* _wa)
 		ec_not0(pthread_mutex_lock(&(tp->KNMLock)), "worker lock: errore KNMLock");
 		tp->KNM->matrix[t->i][t->j] = DONE;		
 		free(t);
-		/*se la cosa è vuota sveglio il collector*/
+		/*
+			se tutti i quadranti sono stati elaborati sveglio il collector
+		*/
 		if(checkMutexDone(tp->KNM) == 1){
 			tp->collectorFlag = 1;
 			ec_not0(pthread_cond_signal(&(tp->waitingWorkers)), "worker signal: errore waitingWorkers");
 		}
 
-		/*sveglio tutti i worker in attesa per elaborare il task*/
+		/*
+			sveglio tutti i worker in attesa per elaborare il task
+		*/
 		ec_not0(pthread_cond_broadcast(&(tp->waitingTask)), "worker broadcast: errore waitingTask");
 		ec_not0(pthread_mutex_unlock(&(tp->KNMLock)), "worker unlock: errore KNMLock");
 	}
